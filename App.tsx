@@ -316,7 +316,7 @@ Format Báo cáo BẮT BUỘC:
 Constraints: BẮT BUỘC phải có câu cảnh báo này ở cuối báo cáo (in nghiêng hoặc in đậm): "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS."
 `;
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         contents: [
           { inlineData: { data: base64Data, mimeType } },
           prompt
