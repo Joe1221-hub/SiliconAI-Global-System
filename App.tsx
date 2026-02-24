@@ -314,7 +314,7 @@ Format Báo cáo BẮT BUỘC:
 (Đề xuất các thí nghiệm kiểm chứng như Patch-clamp, RNA-seq, IHC, v.v.)
 
 Constraints: BẮT BUỘC phải có câu cảnh báo này ở cuối báo cáo (in nghiêng hoặc in đậm): "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS."
-`;
+. Trả về duy nhất 1 đối tượng JSON nguyên bản, không bao gồm ký tự Markdown. Cấu trúc JSON bắt buộc: {"healthAssessment": {"nucleusState": "...", "cytoskeletonIntegrity": "...", "overallRisk": "..."}}`;
       const response = await ai.models.generateContent({
         model: "gemini-pro",
         contents: [
