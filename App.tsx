@@ -172,7 +172,7 @@ Return ONLY a valid JSON object with this exact structure:
 `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: [
           { inlineData: { data: base64Data, mimeType } },
           prompt
@@ -316,7 +316,7 @@ Format Báo cáo BẮT BUỘC:
 Constraints: BẮT BUỘC phải có câu cảnh báo này ở cuối báo cáo (in nghiêng hoặc in đậm): "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS."
 . Trả về duy nhất 1 đối tượng JSON nguyên bản, không bao gồm ký tự Markdown. Cấu trúc JSON bắt buộc: {"healthAssessment": {"nucleusState": "...", "cytoskeletonIntegrity": "...", "overallRisk": "..."}}`;
       const response = await ai.models.generateContent({
-        model: "gemini-pro",
+        model: "gemini-1.5-flash",
         contents: [
           { inlineData: { data: base64Data, mimeType } },
           prompt
