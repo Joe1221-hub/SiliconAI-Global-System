@@ -138,7 +138,7 @@ export default function App() {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) throw new Error("Missing API Key");
       
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI(apiKey);
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
 
