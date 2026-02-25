@@ -135,16 +135,21 @@ const startPrediction = async () => {
     setPredictionResult(null);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-      if (!apiKey) throw new Error("API Key chưa được thiết lập trên Vercel!");
+      // 1. Kiểm tra Key trực tiếp
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        alert("Hải ơi, Vercel chưa nhận được Key rồi! Kiểm tra lại tab Environment Variables.");
+        throw new Error("Missing API Key");
+      }
 
-      // Khởi tạo AI đúng trật tự
       const genAI = new GoogleGenAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
-      const prompt = "Analyze this fluorescence microscopy image. Return ONLY JSON with fields: cellAnalysis, cellType, quantitativeData (cellCount, density), healthAssessment (nucleusState, cytoskeletonIntegrity, overallRisk), overallConfidence (0-100), processingTime.";
+      
+      // Prompt này ép AI phải trả về số liệu cụ thể
+      const prompt = "Analyze this microscopy image. Return ONLY a JSON object with: cellAnalysis, cellType, quantitativeData (cellCount, density), healthAssessment (nucleusState, cytoskeletonIntegrity, overallRisk), overallConfidence (0-100), processingTime.";
 
       const genResult = await model.generateContent([
         prompt,
@@ -154,37 +159,33 @@ const startPrediction = async () => {
       const responseText = genResult.response.text();
       const cleanJson = responseText.replace(/```json|```/g, "").trim();
       
-      // XỬ LÝ DỮ LIỆU ĐỒNG BỘ
-      const finalResult = JSON.parse(cleanJson);
-      
-      // 1. Đổ dữ liệu vào Dashboard
-      setPredictionResult(finalResult);
+      console.log("Dữ liệu AI trả về:", cleanJson); // Mày bật F12 xem dòng này!
 
-      // 2. Lưu vào History ngay lập tức
-      const newHistoryItem = {
+      const resultData = JSON.parse(cleanJson);
+      
+      // PHẢI CÓ DÒNG NÀY THÌ SỐ MỚI NHẢY
+      setPredictionResult(resultData);
+
+      // Lưu History
+      setHistory(prev => [{
         id: Date.now().toString(),
         timestamp: new Date().toLocaleString(),
         image: selectedImage,
         model: selectedModel,
-        result: finalResult,
+        result: resultData,
         reportContent: null,
-        medicalRecordId,
-        geneTag,
-        province,
-        hospitalName,
-        department
-      };
-      setHistory(prev => [newHistoryItem, ...prev]);
+        medicalRecordId, geneTag, province, hospitalName, department
+      }, ...prev]);
 
     } catch (error: any) {
-      console.error("Prediction error:", error);
-      // Fallback khi lỗi
+      console.error("Lỗi dự đoán:", error);
+      // Nếu lỗi, hiện số 0 để biết là có chạy vào catch
       setPredictionResult({
-        cellAnalysis: "Lỗi phân tích: " + (error.message || "Unknown error"),
+        cellAnalysis: "Lỗi: " + error.message,
         cellType: "Error",
         quantitativeData: { cellCount: 0, density: 0 },
-        healthAssessment: { nucleusState: "N/A", cytoskeletonIntegrity: "N/A", overallRisk: "High" },
-        overallConfidence: 0,
+        healthAssessment: { nucleusState: "N/A", cytoskeletonIntegrity: "N/A", overallRisk: "N/A" },
+        overallConfidence: 1, // Để 1 để biết là có vào catch
         processingTime: 0
       });
     } finally {
