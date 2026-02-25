@@ -179,7 +179,11 @@ const startPrediction = async () => {
         }
       });
 
-      const genResult = await model.generateContent([{ inlineData: { data: base64Data, mimeType } }, prompt]);
+      const genResult = await model.generateContent([
+        { inlineData: { data: base64Data, mimeType } }, 
+        prompt
+      ]);
+      
       const result = JSON.parse(genResult.response.text());
       setPredictionResult(result);
       
@@ -225,8 +229,7 @@ const startPrediction = async () => {
       if (!apiKey) {
         throw new Error("Gemini API Key is missing. Please check your environment variables.");
       }
-
-      const ai = new GoogleGenAI(apiKey);
+      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
 
@@ -268,8 +271,7 @@ const result = await model.generateContent([
   prompt
 ]);
 const response = result.response;
-      
-  if (response && response.text) {
+if (response && response.text) {
         const content = response.text(); 
         setReportContent(content);
         setHistory(prev =>
