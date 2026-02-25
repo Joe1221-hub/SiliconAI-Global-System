@@ -188,10 +188,10 @@ const startPrediction = async () => {
       
       // 2. Lọc bỏ đống rác ```json ... ``` (thứ gây lỗi Unexpected character)
       const cleanJson = responseText.replace(/```json|```/g, "").trim();
-      
-     try {
+
+      try {
         const result = JSON.parse(cleanJson);
-        setPredictionResult(result); // Đổ số vào Dashboard
+        setPredictionResult(result);
 
         const newHistoryItem = {
           id: Date.now().toString(),
@@ -209,14 +209,13 @@ const startPrediction = async () => {
         setHistory(prev => [newHistoryItem, ...prev]);
       } catch (parseError) {
         console.error("Lỗi Parse JSON:", responseText);
-        throw new Error("AI trả về định dạng không chuẩn, Hari hãy thử bấm lại nhé!");
+        throw new Error("AI trả về định dạng không chuẩn!");
       }
 
     } catch (error) {
       console.error("Prediction error:", error);
-      // Fallback khi lỗi để web không trắng trơn
       const fallbackResult = {
-        cellAnalysis: "Dữ liệu mô phỏng do lỗi kết nối AI.",
+        cellAnalysis: "Lỗi kết nối AI, vui lòng thử lại.",
         cellType: "Other",
         quantitativeData: { cellCount: 0, density: 0 },
         healthAssessment: { nucleusState: "N/A", cytoskeletonIntegrity: "N/A", overallRisk: "N/A" },
@@ -227,6 +226,7 @@ const startPrediction = async () => {
     } finally {
       setIsPredicting(false);
     }
+  }; // Dấu đóng này là kết thúc hàm startPrediction
   const handleViewReport = async () => {
     setIsReportModalOpen(true);
     if (reportContent || !predictionResult) return;
