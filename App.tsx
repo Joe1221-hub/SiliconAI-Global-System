@@ -129,98 +129,58 @@ export default function App() {
     }
   };
 
-  const startPrediction = async () => {
+const startPrediction = async () => {
     if (!selectedImage) return;
     setIsPredicting(true);
     setReportContent(null);
     
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      // Lấy API Key từ môi trường Vercel hoặc biến cục bộ
+      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
       if (!apiKey) throw new Error("Missing API Key");
       
       const ai = new GoogleGenAI(apiKey);
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
+      const prompt = "Analyze this fluorescence microscopy image. Return ONLY JSON.";
 
-      const prompt = `
-Role: You are an advanced Computer Vision AI specialized in Biomedical Imaging (e.g., UNet/EfficientNet for segmentation).
-Task: Analyze this fluorescence microscopy image.
-1. Classify the specimen (Neuron, Cancer, or Other).
-2. Extract morphological features based on the classification.
-DO NOT hallucinate gene expression.
-
-Return ONLY a valid JSON object with this exact structure:
-{
-  "cellAnalysis": "Brief description of the image and primary cell type identified.",
-  "cellType": "Neuron" | "Cancer" | "Other",
-  "quantitativeData": {
-    "cellCount": <estimated number of nuclei/cells>,
-    "density": <estimated cells/mm2>,
-    "averageAxonLength": <estimated length in µm, ONLY if Neuron, else null>,
-    "branchingIndex": <estimated branching complexity score 0-10, ONLY if Neuron, else null>,
-    "nuclearPleomorphismScore": <estimated score 0-10, ONLY if Cancer, else null>,
-    "ncRatio": <estimated Nucleus-to-Cytoplasm ratio, ONLY if Cancer, else null>
-  },
-  "healthAssessment": {
-    "nucleusState": "Normal | Apoptotic | Irregular | Pleomorphic",
-    "cytoskeletonIntegrity": "Intact | Fragmented | Degenerating",
-    "overallRisk": "Low Risk | Moderate Risk | High Risk"
-  },
-  "overallConfidence": <float between 0 and 1>,
-  "processingTime": <float>
-}
-`;
-
-     const model = ai.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: { 
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            cellAnalysis: { type: Type.STRING },
-            cellType: { type: Type.STRING },
-            quantitativeData: {
-              type: Type.OBJECT,
-              properties: {
-                cellCount: { type: Type.NUMBER },
-                density: { type: Type.NUMBER },
-                averageAxonLength: { type: Type.NUMBER, nullable: true },
-                branchingIndex: { type: Type.NUMBER, nullable: true },
-                nuclearPleomorphismScore: { type: Type.NUMBER, nullable: true },
-                ncRatio: { type: Type.NUMBER, nullable: true }
-              }
-            },
-            healthAssessment: {
-              type: Type.OBJECT,
-              properties: {
-                nucleusState: { type: Type.STRING },
-                cytoskeletonIntegrity: { type: Type.STRING },
-                overallRisk: { type: Type.STRING }
-              }
-            },
-            overallConfidence: { type: Type.NUMBER },
-            processingTime: { type: Type.NUMBER }
+      const model = ai.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        generationConfig: { 
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              cellAnalysis: { type: Type.STRING },
+              cellType: { type: Type.STRING },
+              quantitativeData: {
+                type: Type.OBJECT,
+                properties: {
+                  cellCount: { type: Type.NUMBER },
+                  density: { type: Type.NUMBER },
+                  averageAxonLength: { type: Type.NUMBER, nullable: true },
+                  branchingIndex: { type: Type.NUMBER, nullable: true },
+                  nuclearPleomorphismScore: { type: Type.NUMBER, nullable: true },
+                  ncRatio: { type: Type.NUMBER, nullable: true }
+                }
+              },
+              healthAssessment: {
+                type: Type.OBJECT,
+                properties: {
+                  nucleusState: { type: Type.STRING },
+                  cytoskeletonIntegrity: { type: Type.STRING },
+                  overallRisk: { type: Type.STRING }
+                }
+              },
+              overallConfidence: { type: Type.NUMBER },
+              processingTime: { type: Type.NUMBER }
+            }
           }
         }
-      }
-    });
-        }
-      }
-    }
-  }
-});
+      });
 
-const genResult = await model.generateContent([
-      { inlineData: { data: base64Data, mimeType } },
-      prompt
-    ]);
-
-    const response = genResult.response;
-    const result = JSON.parse(response.text()); // Lấy text xong parse thành JSON luôn
-
-    setPredictionResult(result);
-      const result = JSON.parse(response.text || "{}");
+      const genResult = await model.generateContent([{ inlineData: { data: base64Data, mimeType } }, prompt]);
+      const result = JSON.parse(genResult.response.text());
       setPredictionResult(result);
       
       const newHistoryItem = {
@@ -237,42 +197,19 @@ const genResult = await model.generateContent([
         department
       };
       setHistory(prev => [newHistoryItem, ...prev]);
+
     } catch (error) {
       console.error("Prediction error:", error);
-      // Fallback to mock data if API fails
+      // Nếu lỗi AI, dùng dữ liệu mẫu để web không bị chết đứng
       const fallbackResult = {
-        cellAnalysis: "Fallback analysis due to API error. Showing simulated morphological data.",
-        cellType: "Cancer",
-        quantitativeData: {
-          cellCount: Math.floor(Math.random() * 50) + 10,
-          density: Math.floor(Math.random() * 300) + 100,
-          nuclearPleomorphismScore: Math.floor(Math.random() * 5) + 5,
-          ncRatio: parseFloat((Math.random() * 0.5 + 0.3).toFixed(2))
-        },
-        healthAssessment: {
-          nucleusState: "Pleomorphic",
-          cytoskeletonIntegrity: "Fragmented",
-          overallRisk: "High Risk"
-        },
-        overallConfidence: parseFloat((Math.random() * 0.1 + 0.9).toFixed(2)),
-        processingTime: parseFloat((Math.random() * 2 + 1).toFixed(2))
+        cellAnalysis: "Dữ liệu mô phỏng do lỗi kết nối AI.",
+        cellType: "Other",
+        quantitativeData: { cellCount: 0, density: 0 },
+        healthAssessment: { nucleusState: "N/A", cytoskeletonIntegrity: "N/A", overallRisk: "N/A" },
+        overallConfidence: 0,
+        processingTime: 0
       };
       setPredictionResult(fallbackResult);
-      
-      const newHistoryItem = {
-        id: Date.now().toString(),
-        timestamp: new Date().toLocaleString(),
-        image: selectedImage,
-        model: selectedModel,
-        result: fallbackResult,
-        reportContent: null,
-        medicalRecordId,
-        geneTag,
-        province,
-        hospitalName,
-        department
-      };
-      setHistory(prev => [newHistoryItem, ...prev]);
     } finally {
       setIsPredicting(false);
     }
