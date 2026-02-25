@@ -234,8 +234,6 @@ const startPrediction = async () => {
 
       // 2. Sau đó mới dùng apiKey để tạo thằng ai
       const ai = new GoogleGenAI(apiKey); 
-
-      const base64Data = selectedImage!.split(',')[1];
       
       if (!apiKey) {
         throw new Error("Gemini API Key is missing. Please check your environment variables.");
