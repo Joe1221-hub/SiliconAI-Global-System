@@ -136,7 +136,7 @@ const startPrediction = async () => {
     
     try {
       // Lấy API Key từ môi trường Vercel hoặc biến cục bộ
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+      const apiKey = import.meta.env.NEXT_PUBLIC_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY || "";
       if (!apiKey) throw new Error("Missing API Key");
       
       const ai = new GoogleGenAI(apiKey);
@@ -226,7 +226,7 @@ const startPrediction = async () => {
     setIsGeneratingReport(true);
      try {
       // 1. Phải lấy API Key trước
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+      const apiKey = import.meta.env.NEXT_PUBLIC_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY || "";
       
       if (!apiKey) {
         throw new Error("Gemini API Key is missing. Please check your environment variables.");
