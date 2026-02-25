@@ -269,20 +269,18 @@ const result = await model.generateContent([
 ]);
 const response = result.response;
       
-      if (response && response.text) {
-  const content = response.text(); // THÊM CẶP NGOẶC () Ở ĐÂY
-  setReportContent(content);
-  setHistory(prev => prev.map(item =>
-    item.image === selectedImage && item.model === selectedModel && !item.reportContent
-      ? { ...item, reportContent: content }
-      : item
-  ));
-}
-            ? { ...item, reportContent: response.text }
-            : item
-        ));
+  if (response && response.text) {
+        const content = response.text(); 
+        setReportContent(content);
+        setHistory(prev =>
+          prev.map(item =>
+            item.image === selectedImage && item.model === selectedModel
+              ? { ...item, reportContent: content }
+              : item
+          )
+        );
       } else {
-        throw new Error("Empty response from AI model.");
+        throw new Error("Không nhận được nội dung từ AI");
       }
     } catch (error: any) {
       console.error("Error generating report:", error);
