@@ -132,115 +132,82 @@ export default function App() {
 const startPrediction = async () => {
     if (!selectedImage) return;
     setIsPredicting(true);
-    setReportContent(null);
-    
+    setPredictionResult(null);
+
     try {
-      // Lấy API Key từ môi trường Vercel hoặc biến cục bộ
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-      if (!apiKey) throw new Error("Missing API Key");
-      
-      const ai = new GoogleGenAI(apiKey);
+      if (!apiKey) throw new Error("API Key chưa được thiết lập trên Vercel!");
+
+      // Khởi tạo AI đúng trật tự
+      const genAI = new GoogleGenAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
-      const prompt = "Analyze this fluorescence microscopy image. Return ONLY JSON.";
-
-      const model = ai.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        generationConfig: { 
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              cellAnalysis: { type: Type.STRING },
-              cellType: { type: Type.STRING },
-              quantitativeData: {
-                type: Type.OBJECT,
-                properties: {
-                  cellCount: { type: Type.NUMBER },
-                  density: { type: Type.NUMBER },
-                  averageAxonLength: { type: Type.NUMBER, nullable: true },
-                  branchingIndex: { type: Type.NUMBER, nullable: true },
-                  nuclearPleomorphismScore: { type: Type.NUMBER, nullable: true },
-                  ncRatio: { type: Type.NUMBER, nullable: true }
-                }
-              },
-              healthAssessment: {
-                type: Type.OBJECT,
-                properties: {
-                  nucleusState: { type: Type.STRING },
-                  cytoskeletonIntegrity: { type: Type.STRING },
-                  overallRisk: { type: Type.STRING }
-                }
-              },
-              overallConfidence: { type: Type.NUMBER },
-              processingTime: { type: Type.NUMBER }
-            }
-          }
-        }
-      });
+      const prompt = "Analyze this fluorescence microscopy image. Return ONLY JSON with fields: cellAnalysis, cellType, quantitativeData (cellCount, density), healthAssessment (nucleusState, cytoskeletonIntegrity, overallRisk), overallConfidence (0-100), processingTime.";
 
       const genResult = await model.generateContent([
-        { inlineData: { data: base64Data, mimeType } }, 
-        prompt
+        prompt,
+        { inlineData: { data: base64Data, mimeType } }
       ]);
-      
+
       const responseText = genResult.response.text();
-      
-      // 2. Lọc bỏ đống rác ```json ... ``` (thứ gây lỗi Unexpected character)
       const cleanJson = responseText.replace(/```json|```/g, "").trim();
+      
+      // XỬ LÝ DỮ LIỆU ĐỒNG BỘ
+      const finalResult = JSON.parse(cleanJson);
+      
+      // 1. Đổ dữ liệu vào Dashboard
+      setPredictionResult(finalResult);
 
-      try {
-        const result = JSON.parse(cleanJson);
-        setPredictionResult(result);
+      // 2. Lưu vào History ngay lập tức
+      const newHistoryItem = {
+        id: Date.now().toString(),
+        timestamp: new Date().toLocaleString(),
+        image: selectedImage,
+        model: selectedModel,
+        result: finalResult,
+        reportContent: null,
+        medicalRecordId,
+        geneTag,
+        province,
+        hospitalName,
+        department
+      };
+      setHistory(prev => [newHistoryItem, ...prev]);
 
-        const newHistoryItem = {
-          id: Date.now().toString(),
-          timestamp: new Date().toLocaleString(),
-          image: selectedImage,
-          model: selectedModel,
-          result: result,
-          reportContent: null,
-          medicalRecordId,
-          geneTag,
-          province,
-          hospitalName,
-          department
-        };
-        setHistory(prev => [newHistoryItem, ...prev]);
-      } catch (parseError) {
-        console.error("Lỗi Parse JSON:", responseText);
-        throw new Error("AI trả về định dạng không chuẩn!");
-      }
-
-    } catch (error) {
+    } catch (error: any) {
       console.error("Prediction error:", error);
-      const fallbackResult = {
-        cellAnalysis: "Lỗi kết nối AI, vui lòng thử lại.",
-        cellType: "Other",
+      // Fallback khi lỗi
+      setPredictionResult({
+        cellAnalysis: "Lỗi phân tích: " + (error.message || "Unknown error"),
+        cellType: "Error",
         quantitativeData: { cellCount: 0, density: 0 },
-        healthAssessment: { nucleusState: "N/A", cytoskeletonIntegrity: "N/A", overallRisk: "N/A" },
+        healthAssessment: { nucleusState: "N/A", cytoskeletonIntegrity: "N/A", overallRisk: "High" },
         overallConfidence: 0,
         processingTime: 0
-      };
-      setPredictionResult(fallbackResult);
+      });
     } finally {
       setIsPredicting(false);
     }
-  }; // Dấu đóng này là kết thúc hàm startPrediction
-  const handleViewReport = async () => {
+  };
+const handleViewReport = async () => {
     setIsReportModalOpen(true);
+    // Nếu đã có báo cáo rồi thì không chạy lại cho tốn tiền API
     if (reportContent || !predictionResult) return;
 
     setIsGeneratingReport(true);
-     try {
-      
+    try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-      if (!apiKey) throw new Error("API Key chưa được thiết lập trên Vercel!");
-      const ai = new GoogleGenAI(apiKey);
+      if (!apiKey) throw new Error("An API Key must be set (Hải ơi, check Vercel nhé!)");
+
+      const genAI = new GoogleGenAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
-      
+
+      // GIỮ NGUYÊN PROMPT CỦA MÀY NHƯNG BỎ ĐOẠN "TRẢ VỀ JSON" Ở CUỐI ĐỂ NÓ RA VĂN BẢN (MARKDOWN)
       const prompt = `
 Role: Mày là một chuyên gia hàng đầu về Computer Vision trong Y sinh và Bioinformatics tại Harvard.
 Task: Dựa trên dữ liệu phân tích hình thái học sau đây từ model ${selectedModel}, hãy viết một báo cáo đánh giá chuyên sâu.
@@ -249,39 +216,32 @@ Loại tế bào: ${predictionResult.cellType}
 Dữ liệu định lượng:
 - Số lượng tế bào: ${predictionResult.quantitativeData.cellCount}
 - Mật độ (Cells/mm²): ${predictionResult.quantitativeData.density}
-${predictionResult.cellType === 'Neuron' ? `- Chiều dài sợi trục TB (µm): ${predictionResult.quantitativeData.averageAxonLength}
-- Chỉ số phân nhánh: ${predictionResult.quantitativeData.branchingIndex}/10` : ''}
-${predictionResult.cellType === 'Cancer' ? `- Điểm đa hình thái nhân (Pleomorphism): ${predictionResult.quantitativeData.nuclearPleomorphismScore}/10
-- Tỉ lệ Nhân/Tế bào chất (N/C Ratio): ${predictionResult.quantitativeData.ncRatio}` : ''}
+${predictionResult.cellType === 'Neuron' ? `- Chiều gia sợi trục TB (µm): ${predictionResult.quantitativeData.averageAxonLength} - Chỉ số phân nhánh: ${predictionResult.quantitativeData.branchingIndex}/10` : ''}
+${predictionResult.cellType === 'Cancer' ? `- Điểm đa hình thái nhân (Pleomorphism): ${predictionResult.quantitativeData.nuclearPleomorphismScore}/10 - Tỉ lệ Nhân/Tế bào chất (N/C Ratio): ${predictionResult.quantitativeData.ncRatio}` : ''}
 
 Đánh giá sức khỏe:
 - Trạng thái nhân: ${predictionResult.healthAssessment.nucleusState}
 - Khung xương tế bào: ${predictionResult.healthAssessment.cytoskeletonIntegrity}
 - Nguy cơ tổng thể: ${predictionResult.healthAssessment.overallRisk}
 
-Tone & Style: Ngôn ngữ chuyên nghiệp, chính xác, khoa học, không thừa thãi. Nếu là ung thư, hãy phân tích theo hướng bệnh học ung thư (oncology). Nếu là neuron, phân tích theo hướng thoái hóa thần kinh (neurodegeneration).
-
 Format Báo cáo BẮT BUỘC:
 ### Phần 1: Thông số định lượng (Quantitative Data)
-(Phân tích ý nghĩa của các con số mật độ, và các chỉ số đặc thù của loại tế bào)
-
 ### Phần 2: Đánh giá sức khỏe tế bào (Cellular Health Assessment)
-(Đánh giá trạng thái nhân và khung xương, liên hệ tới các nguy cơ bệnh lý tương ứng)
-
 ### Phần 3: Khuyến nghị chuyên sâu (Advanced Recommendations)
-(Đề xuất các thí nghiệm kiểm chứng như Patch-clamp, RNA-seq, IHC, v.v.)
 
-Constraints: BẮT BUỘC phải có câu cảnh báo này ở cuối báo cáo (in nghiêng hoặc in đậm): "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS."
-. Trả về duy nhất 1 đối tượng JSON nguyên bản, không bao gồm ký tự Markdown. Cấu trúc JSON bắt buộc: {"healthAssessment": {"nucleusState": "...", "cytoskeletonIntegrity": "...", "overallRisk": "..."}}`;
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-const result = await model.generateContent([
-  { inlineData: { data: base64Data, mimeType } },
-  prompt
-]);
-const response = result.response;
-if (response && response.text) {
-        const content = response.text(); 
+*Constraints: BẮT BUỘC có câu: "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS." ở cuối.*`;
+
+      // GỌI AI: Truyền đúng thứ tự [Prompt, Image]
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { data: base64Data, mimeType } }
+      ]);
+
+      const content = result.response.text();
+      
+      if (content) {
         setReportContent(content);
+        // Cập nhật vào lịch sử để lần sau mở lại không phải load
         setHistory(prev =>
           prev.map(item =>
             item.image === selectedImage && item.model === selectedModel
@@ -289,12 +249,10 @@ if (response && response.text) {
               : item
           )
         );
-      } else {
-        throw new Error("Không nhận được nội dung từ AI");
       }
     } catch (error: any) {
-      console.error("Error generating report:", error);
-      setReportContent(`**Đã xảy ra lỗi khi tạo báo cáo:**\n\n${error.message || 'Unknown error'}\n\nVui lòng thử lại sau.`);
+      console.error("Report error:", error);
+      setReportContent(`**Lỗi:** ${error.message}`);
     } finally {
       setIsGeneratingReport(false);
     }
