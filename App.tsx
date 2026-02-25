@@ -172,49 +172,54 @@ Return ONLY a valid JSON object with this exact structure:
 `;
 
      const model = ai.getGenerativeModel({ 
-  model: "gemini-1.5-flash",
-  generationConfig: { responseMimeType: "application/json" } // Nếu muốn dùng JSON schema
-});
-
-const result = await model.generateContent([
-  { inlineData: { data: base64Data, mimeType } },
-  prompt
-]);
-
-const response = result.response;
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              cellAnalysis: { type: Type.STRING },
-              cellType: { type: Type.STRING },
-              quantitativeData: {
-                type: Type.OBJECT,
-                properties: {
-                  cellCount: { type: Type.NUMBER },
-                  density: { type: Type.NUMBER },
-                  averageAxonLength: { type: Type.NUMBER, nullable: true },
-                  branchingIndex: { type: Type.NUMBER, nullable: true },
-                  nuclearPleomorphismScore: { type: Type.NUMBER, nullable: true },
-                  ncRatio: { type: Type.NUMBER, nullable: true }
-                }
-              },
-              healthAssessment: {
-                type: Type.OBJECT,
-                properties: {
-                  nucleusState: { type: Type.STRING },
-                  cytoskeletonIntegrity: { type: Type.STRING },
-                  overallRisk: { type: Type.STRING }
-                }
-              },
-              overallConfidence: { type: Type.NUMBER },
-              processingTime: { type: Type.NUMBER }
-            }
+      model: "gemini-1.5-flash",
+      generationConfig: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            cellAnalysis: { type: Type.STRING },
+            cellType: { type: Type.STRING },
+            quantitativeData: {
+              type: Type.OBJECT,
+              properties: {
+                cellCount: { type: Type.NUMBER },
+                density: { type: Type.NUMBER },
+                averageAxonLength: { type: Type.NUMBER, nullable: true },
+                branchingIndex: { type: Type.NUMBER, nullable: true },
+                nuclearPleomorphismScore: { type: Type.NUMBER, nullable: true },
+                ncRatio: { type: Type.NUMBER, nullable: true }
+              }
+            },
+            healthAssessment: {
+              type: Type.OBJECT,
+              properties: {
+                nucleusState: { type: Type.STRING },
+                cytoskeletonIntegrity: { type: Type.STRING },
+                overallRisk: { type: Type.STRING }
+              }
+            },
+            overallConfidence: { type: Type.NUMBER },
+            processingTime: { type: Type.NUMBER }
           }
         }
-      });
+      }
+    });
+        }
+      }
+    }
+  }
+});
 
+const genResult = await model.generateContent([
+      { inlineData: { data: base64Data, mimeType } },
+      prompt
+    ]);
+
+    const response = genResult.response;
+    const result = JSON.parse(response.text()); // Lấy text xong parse thành JSON luôn
+
+    setPredictionResult(result);
       const result = JSON.parse(response.text || "{}");
       setPredictionResult(result);
       
