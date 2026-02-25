@@ -191,14 +191,14 @@ const startPrediction = async () => {
       
      try {
         const result = JSON.parse(cleanJson);
-        setPredictionResult(result); // Đổ số lên màn hình ngay
-        
+        setPredictionResult(result); // Đổ số vào Dashboard
+
         const newHistoryItem = {
           id: Date.now().toString(),
           timestamp: new Date().toLocaleString(),
           image: selectedImage,
           model: selectedModel,
-          result: result, // Dùng đúng biến vừa parse
+          result: result,
           reportContent: null,
           medicalRecordId,
           geneTag,
@@ -209,31 +209,12 @@ const startPrediction = async () => {
         setHistory(prev => [newHistoryItem, ...prev]);
       } catch (parseError) {
         console.error("Lỗi Parse JSON:", responseText);
-        throw new Error("AI trả về định dạng không chuẩn!");
-      }
-      } catch (parseError) {
-        console.error("Lỗi Parse JSON:", responseText);
         throw new Error("AI trả về định dạng không chuẩn, Hari hãy thử bấm lại nhé!");
       }
-      
-      const newHistoryItem = {
-        id: Date.now().toString(),
-        timestamp: new Date().toLocaleString(),
-        image: selectedImage,
-        model: selectedModel,
-        result: result,
-        reportContent: null,
-        medicalRecordId,
-        geneTag,
-        province,
-        hospitalName,
-        department
-      };
-      setHistory(prev => [newHistoryItem, ...prev]);
 
     } catch (error) {
       console.error("Prediction error:", error);
-      // Nếu lỗi AI, dùng dữ liệu mẫu để web không bị chết đứng
+      // Fallback khi lỗi để web không trắng trơn
       const fallbackResult = {
         cellAnalysis: "Dữ liệu mô phỏng do lỗi kết nối AI.",
         cellType: "Other",
@@ -246,8 +227,6 @@ const startPrediction = async () => {
     } finally {
       setIsPredicting(false);
     }
-  };
-
   const handleViewReport = async () => {
     setIsReportModalOpen(true);
     if (reportContent || !predictionResult) return;
