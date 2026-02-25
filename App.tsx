@@ -189,18 +189,16 @@ const startPrediction = async () => {
       // 2. Lọc bỏ đống rác ```json ... ``` (thứ gây lỗi Unexpected character)
       const cleanJson = responseText.replace(/```json|```/g, "").trim();
       
-      try {
-        // 3. Ép kiểu về JSON để Dashboard nhảy số
+     try {
         const result = JSON.parse(cleanJson);
-        setPredictionResult(result);
+        setPredictionResult(result); // Đổ số lên màn hình ngay
         
-        // 4. Cập nhật lịch sử với kết quả thật
         const newHistoryItem = {
           id: Date.now().toString(),
           timestamp: new Date().toLocaleString(),
           image: selectedImage,
           model: selectedModel,
-          result: result, // Kết quả thật ở đây
+          result: result, // Dùng đúng biến vừa parse
           reportContent: null,
           medicalRecordId,
           geneTag,
@@ -209,7 +207,10 @@ const startPrediction = async () => {
           department
         };
         setHistory(prev => [newHistoryItem, ...prev]);
-
+      } catch (parseError) {
+        console.error("Lỗi Parse JSON:", responseText);
+        throw new Error("AI trả về định dạng không chuẩn!");
+      }
       } catch (parseError) {
         console.error("Lỗi Parse JSON:", responseText);
         throw new Error("AI trả về định dạng không chuẩn, Hari hãy thử bấm lại nhé!");
@@ -254,14 +255,8 @@ const startPrediction = async () => {
     setIsGeneratingReport(true);
      try {
       
-     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-      
-      // 2. Kiểm tra túi tiền (Key) trước
-      if (!apiKey) {
-        throw new Error("Hari ơi, Key VITE_GEMINI_API_KEY trên Vercel vẫn chưa thấy!");
-      }
-
-      // 3. Có tiền rồi mới thuê thợ (AI) làm việc
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+      if (!apiKey) throw new Error("API Key chưa được thiết lập trên Vercel!");
       const ai = new GoogleGenAI(apiKey);
 
       const base64Data = selectedImage!.split(',')[1];
