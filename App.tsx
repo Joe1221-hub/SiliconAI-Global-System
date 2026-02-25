@@ -184,8 +184,36 @@ const startPrediction = async () => {
         prompt
       ]);
       
-      const result = JSON.parse(genResult.response.text());
-      setPredictionResult(result);
+      const responseText = genResult.response.text();
+      
+      // 2. Lọc bỏ đống rác ```json ... ``` (thứ gây lỗi Unexpected character)
+      const cleanJson = responseText.replace(/```json|```/g, "").trim();
+      
+      try {
+        // 3. Ép kiểu về JSON để Dashboard nhảy số
+        const result = JSON.parse(cleanJson);
+        setPredictionResult(result);
+        
+        // 4. Cập nhật lịch sử với kết quả thật
+        const newHistoryItem = {
+          id: Date.now().toString(),
+          timestamp: new Date().toLocaleString(),
+          image: selectedImage,
+          model: selectedModel,
+          result: result, // Kết quả thật ở đây
+          reportContent: null,
+          medicalRecordId,
+          geneTag,
+          province,
+          hospitalName,
+          department
+        };
+        setHistory(prev => [newHistoryItem, ...prev]);
+
+      } catch (parseError) {
+        console.error("Lỗi Parse JSON:", responseText);
+        throw new Error("AI trả về định dạng không chuẩn, Hari hãy thử bấm lại nhé!");
+      }
       
       const newHistoryItem = {
         id: Date.now().toString(),
