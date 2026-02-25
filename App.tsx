@@ -62,9 +62,9 @@ const HOSPITALS_BY_PROVINCE: Record<string, string[]> = {
   'Thừa Thiên Huế': ['Bệnh viện Trung ương Huế']
 };
 const DEPARTMENTS_BY_HOSPITAL: Record<string, string[]> = {
-  'Bệnh viện Bạch Mai': ['Khoa Thần kinh', 'Khoa Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh', 'Trung tâm Y học hạt nhân'],
+  'Bệnh viện Bạch Mai': ['Viện Tim mạch', 'Viện Thần kinh', 'Trung tâm Chống độc', 'Khoa Khám bệnh', 'Trung tâm Y học hạt nhân', 'Trung tâm cấp cứu A9', 'Chấn thương chỉnh hình', 'Nhi', 'Sản', 'Tiêu hóa', 'Thận nhân tạo'],
   'Bệnh viện Việt Đức': ['Khoa Phẫu thuật Thần kinh', 'Khoa Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh'],
-  'Bệnh viện K': ['Khoa Ngoại Thần kinh', 'Khoa Nội Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh', 'Khoa Xạ trị'],
+  'Bệnh viện K': ['Khoa Ngoại Thần kinh', 'Khoa Nội Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh', 'Khoa Xạ trị', 'Khoa Chẩn đoán hình ảnh', 'Khoa Hồi sức cấp cứu', 'Khoa Nội', 'Khoa Ngoại'],
   'Bệnh viện Chợ Rẫy': ['Khoa Nội Thần kinh', 'Khoa Ngoại Thần kinh', 'Khoa Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh'],
   'Bệnh viện Đại học Y Dược': ['Khoa Thần kinh', 'Khoa Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh', 'Trung tâm Phân tử'],
   'Bệnh viện Trung ương Huế': ['Khoa Thần kinh', 'Trung tâm Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh'],
@@ -171,12 +171,17 @@ Return ONLY a valid JSON object with this exact structure:
 }
 `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [
-          { inlineData: { data: base64Data, mimeType } },
-          prompt
-        ],
+     const model = ai.getGenerativeModel({ 
+  model: "gemini-1.5-flash",
+  generationConfig: { responseMimeType: "application/json" } // Nếu muốn dùng JSON schema
+});
+
+const result = await model.generateContent([
+  { inlineData: { data: base64Data, mimeType } },
+  prompt
+]);
+
+const response = result.response;
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -279,7 +284,7 @@ Return ONLY a valid JSON object with this exact structure:
         throw new Error("Gemini API Key is missing. Please check your environment variables.");
       }
 
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI(apiKey);
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
 
@@ -315,18 +320,22 @@ Format Báo cáo BẮT BUỘC:
 
 Constraints: BẮT BUỘC phải có câu cảnh báo này ở cuối báo cáo (in nghiêng hoặc in đậm): "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS."
 . Trả về duy nhất 1 đối tượng JSON nguyên bản, không bao gồm ký tự Markdown. Cấu trúc JSON bắt buộc: {"healthAssessment": {"nucleusState": "...", "cytoskeletonIntegrity": "...", "overallRisk": "..."}}`;
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [
-          { inlineData: { data: base64Data, mimeType } },
-          prompt
-        ]
-      });
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+const result = await model.generateContent([
+  { inlineData: { data: base64Data, mimeType } },
+  prompt
+]);
+const response = result.response;
       
       if (response && response.text) {
-        setReportContent(response.text);
-        setHistory(prev => prev.map(item => 
-          item.image === selectedImage && item.model === selectedModel && !item.reportContent
+  const content = response.text(); // THÊM CẶP NGOẶC () Ở ĐÂY
+  setReportContent(content);
+  setHistory(prev => prev.map(item =>
+    item.image === selectedImage && item.model === selectedModel && !item.reportContent
+      ? { ...item, reportContent: content }
+      : item
+  ));
+}
             ? { ...item, reportContent: response.text }
             : item
         ));
