@@ -225,8 +225,17 @@ const startPrediction = async () => {
 
     setIsGeneratingReport(true);
      try {
-      // Gộp lại làm một cho sạch sẽ, ưu tiên key có NEXT_PUBLIC để chạy được trên Web
+      // 1. Phải lấy API Key trước
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+      
+      if (!apiKey) {
+        throw new Error("Gemini API Key is missing. Please check your environment variables.");
+      }
+
+      // 2. Sau đó mới dùng apiKey để tạo thằng ai
+      const ai = new GoogleGenAI(apiKey); 
+
+      const base64Data = selectedImage!.split(',')[1];
       
       if (!apiKey) {
         throw new Error("Gemini API Key is missing. Please check your environment variables.");
