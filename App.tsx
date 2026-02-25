@@ -136,7 +136,7 @@ const startPrediction = async () => {
     
     try {
       // Lấy API Key từ môi trường Vercel hoặc biến cục bộ
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
       if (!apiKey) throw new Error("Missing API Key");
       
       const ai = new GoogleGenAI(apiKey);
@@ -253,19 +253,16 @@ const startPrediction = async () => {
 
     setIsGeneratingReport(true);
      try {
-      // 1. Phải lấy API Key trước
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
       
+     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+      
+      // 2. Kiểm tra túi tiền (Key) trước
       if (!apiKey) {
-        throw new Error("Gemini API Key is missing. Please check your environment variables.");
+        throw new Error("Hari ơi, Key VITE_GEMINI_API_KEY trên Vercel vẫn chưa thấy!");
       }
 
-      // 2. Sau đó mới dùng apiKey để tạo thằng ai
-      const ai = new GoogleGenAI(apiKey); 
-      
-      if (!apiKey) {
-        throw new Error("Gemini API Key is missing. Please check your environment variables.");
-      }
+      // 3. Có tiền rồi mới thuê thợ (AI) làm việc
+      const ai = new GoogleGenAI(apiKey);
 
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
