@@ -224,15 +224,17 @@ const startPrediction = async () => {
     if (reportContent || !predictionResult) return;
 
     setIsGeneratingReport(true);
-    try {
-      const apiKey = process.env.GEMINI_API_KEY;
+     try {
+      // Gộp lại làm một cho sạch sẽ, ưu tiên key có NEXT_PUBLIC để chạy được trên Web
+      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+      
       if (!apiKey) {
         throw new Error("Gemini API Key is missing. Please check your environment variables.");
       }
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
-
+      
       const prompt = `
 Role: Mày là một chuyên gia hàng đầu về Computer Vision trong Y sinh và Bioinformatics tại Harvard.
 Task: Dựa trên dữ liệu phân tích hình thái học sau đây từ model ${selectedModel}, hãy viết một báo cáo đánh giá chuyên sâu.
