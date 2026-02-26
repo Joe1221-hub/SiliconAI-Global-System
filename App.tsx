@@ -132,7 +132,7 @@ export default function App() {
 // ==========================================
   // 1. HÀM DỰ ĐOÁN CHÍNH (START PREDICTION)
   // ==========================================
-  const startPrediction = async () => {
+ const startPrediction = async () => {
     if (!selectedImage) return;
     setIsPredicting(true);
     setPredictionResult(null);
@@ -140,7 +140,7 @@ export default function App() {
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
       if (!apiKey) {
-        alert("Hari ơi, VITE_GEMINI_API_KEY đang trống trên Vercel! Hãy kiểm tra tab Environment Variables.");
+        alert("Hari ơi, check lại Key VITE_GEMINI_API_KEY trên Vercel nhé!");
         throw new Error("Missing API Key");
       }
 
@@ -169,12 +169,11 @@ export default function App() {
       const cleanJson = responseText.replace(/```json|```/g, "").trim();
       const rawData = JSON.parse(cleanJson);
       
-      // CHUẨN HÓA DỮ LIỆU: Ép tất cả về đúng kiểu dữ liệu Dashboard cần
       const finalResult = {
         cellAnalysis: rawData.cellAnalysis || "Analysis successful",
         cellType: rawData.cellType || "Other",
         quantitativeData: {
-          cellCount: Number(rawData.quantitativeData?.cellCount || rawData.quantitativeData?.cell_count || 0),
+          cellCount: Number(rawData.quantitativeData?.cellCount || 0),
           density: Number(rawData.quantitativeData?.density || 0),
           averageAxonLength: Number(rawData.quantitativeData?.averageAxonLength || 0),
           ncRatio: Number(rawData.quantitativeData?.ncRatio || 0),
@@ -192,7 +191,6 @@ export default function App() {
       
       setPredictionResult(finalResult);
 
-      // Đồng bộ History ngay lập tức
       setHistory(prev => [{
         id: Date.now().toString(),
         timestamp: new Date().toLocaleString(),
@@ -204,16 +202,13 @@ export default function App() {
       }, ...prev]);
 
     } catch (error: any) {
-      console.error("AI Prediction Error:", error);
+      console.error("AI Error:", error);
       alert("Lỗi AI: " + error.message);
     } finally {
       setIsPredicting(false);
     }
   };
 
-  // ==========================================
-  // 2. HÀM TẠO BÁO CÁO (HANDLE VIEW REPORT)
-  // ==========================================
   const handleViewReport = async () => {
     setIsReportModalOpen(true);
     if (reportContent || !predictionResult) return;
@@ -221,7 +216,7 @@ export default function App() {
     setIsGeneratingReport(true);
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-      if (!apiKey) throw new Error("API Key is missing on Vercel!");
+      if (!apiKey) throw new Error("API Key is missing!");
 
       const genAI = new GoogleGenAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -229,7 +224,6 @@ export default function App() {
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
 
-      // PROMPT NGUYÊN BẢN 100% CỦA HẢI
       const prompt = `
 Role: Mày là một chuyên gia hàng đầu về Computer Vision trong Y sinh và Bioinformatics tại Harvard.
 Task: Dựa trên dữ liệu phân tích hình thái học sau đây từ model ${selectedModel}, hãy viết một báo cáo đánh giá chuyên sâu.
@@ -261,7 +255,6 @@ Format Báo cáo BẮT BUỘC:
       const content = result.response.text();
       setReportContent(content);
       
-      // Lưu vào History để không phải load lại
       setHistory(prev =>
         prev.map(item =>
           item.image === selectedImage && item.model === selectedModel
@@ -270,8 +263,7 @@ Format Báo cáo BẮT BUỘC:
         )
       );
     } catch (error: any) {
-      console.error("Report Error:", error);
-      setReportContent(`**Lỗi hệ thống:** ${error.message}`);
+      setReportContent("**Lỗi:** " + error.message);
     } finally {
       setIsGeneratingReport(false);
     }
