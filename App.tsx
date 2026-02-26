@@ -140,38 +140,32 @@ export default function App() {
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
       if (!apiKey) {
-        alert("Hari ơi, check lại Key VITE_GEMINI_API_KEY trên Vercel nhé!");
+        alert("Hari ơi, nạp Key VITE_GEMINI_API_KEY vào Vercel đi!");
         throw new Error("Missing API Key");
       }
 
       const genAI = new GoogleGenAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
       
-      const prompt = `Analyze this microscopy image. Return ONLY a JSON object with this exact structure:
+      const prompt = `Analyze this microscopy image. Return ONLY a JSON object: 
       {
         "cellAnalysis": "string",
-        "cellType": "string",
+        "cellType": "Neuron/Cancer/Blood",
         "quantitativeData": { "cellCount": number, "density": number, "averageAxonLength": number, "ncRatio": number, "nuclearPleomorphismScore": number, "branchingIndex": number },
         "healthAssessment": { "nucleusState": "string", "cytoskeletonIntegrity": "string", "overallRisk": "string" },
         "overallConfidence": number,
         "processingTime": number
       }`;
 
-      const genResult = await model.generateContent([
-        prompt,
-        { inlineData: { data: base64Data, mimeType } }
-      ]);
-
+      const genResult = await model.generateContent([prompt, { inlineData: { data: base64Data, mimeType } }]);
       const responseText = genResult.response.text();
       const cleanJson = responseText.replace(/```json|```/g, "").trim();
       const rawData = JSON.parse(cleanJson);
       
       const finalResult = {
-        cellAnalysis: rawData.cellAnalysis || "Analysis successful",
-        cellType: rawData.cellType || "Other",
+        ...rawData,
         quantitativeData: {
           cellCount: Number(rawData.quantitativeData?.cellCount || 0),
           density: Number(rawData.quantitativeData?.density || 0),
@@ -179,30 +173,19 @@ export default function App() {
           ncRatio: Number(rawData.quantitativeData?.ncRatio || 0),
           nuclearPleomorphismScore: Number(rawData.quantitativeData?.nuclearPleomorphismScore || 0),
           branchingIndex: Number(rawData.quantitativeData?.branchingIndex || 0)
-        },
-        healthAssessment: {
-          nucleusState: rawData.healthAssessment?.nucleusState || "Stable",
-          cytoskeletonIntegrity: rawData.healthAssessment?.cytoskeletonIntegrity || "Intact",
-          overallRisk: rawData.healthAssessment?.overallRisk || "Low"
-        },
-        overallConfidence: Number(rawData.overallConfidence || 95),
-        processingTime: Number(rawData.processingTime || 1.5)
+        }
       };
       
       setPredictionResult(finalResult);
-
-      setHistory(prev => [{
-        id: Date.now().toString(),
-        timestamp: new Date().toLocaleString(),
-        image: selectedImage,
-        model: selectedModel,
-        result: finalResult,
-        reportContent: null,
-        medicalRecordId, geneTag, province, hospitalName, department
+      setHistory(prev => [{ 
+        id: Date.now().toString(), 
+        timestamp: new Date().toLocaleString(), 
+        image: selectedImage, 
+        model: selectedModel, 
+        result: finalResult, 
+        medicalRecordId, geneTag, province, hospitalName, department 
       }, ...prev]);
-
     } catch (error: any) {
-      console.error("AI Error:", error);
       alert("Lỗi AI: " + error.message);
     } finally {
       setIsPredicting(false);
@@ -212,15 +195,11 @@ export default function App() {
   const handleViewReport = async () => {
     setIsReportModalOpen(true);
     if (reportContent || !predictionResult) return;
-
     setIsGeneratingReport(true);
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-      if (!apiKey) throw new Error("API Key is missing!");
-
       const genAI = new GoogleGenAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
 
@@ -247,23 +226,10 @@ Format Báo cáo BẮT BUỘC:
 
 *Constraints: BẮT BUỘC có câu: "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS." ở cuối.*`;
 
-      const result = await model.generateContent([
-        prompt,
-        { inlineData: { data: base64Data, mimeType } }
-      ]);
-
-      const content = result.response.text();
-      setReportContent(content);
-      
-      setHistory(prev =>
-        prev.map(item =>
-          item.image === selectedImage && item.model === selectedModel
-            ? { ...item, reportContent: content }
-            : item
-        )
-      );
+      const result = await model.generateContent([prompt, { inlineData: { data: base64Data, mimeType } }]);
+      setReportContent(result.response.text());
     } catch (error: any) {
-      setReportContent("**Lỗi:** " + error.message);
+      setReportContent("Lỗi: " + error.message);
     } finally {
       setIsGeneratingReport(false);
     }
