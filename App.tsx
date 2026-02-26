@@ -131,24 +131,27 @@ export default function App() {
 // ==========================================
   // 1. HÀM DỰ ĐOÁN CHÍNH (START PREDICTION)
   // ==========================================
-  const startPrediction = async () => {
+const startPrediction = async () => {
     if (!selectedImage) return;
     setIsPredicting(true);
     setPredictionResult(null);
 
     try {
+      // 1. Kiểm tra Key (Đảm bảo trên Vercel mày đã đặt đúng tên này)
       const apiKey = import.meta.env.VITE_HARI_KEY || "";
+      if (!apiKey) throw new Error("API Key không tồn tại. Kiểm tra Vercel Environment Variables.");
+
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
 
-      // ĐÁNH TRỰC DIỆN VÀO API GOOGLE, KHÔNG QUA TRUNG GIAN
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
+            role: "user", // Thêm Role để Google nhận diện đúng luồng
             parts: [
-              { text: 'Analyze this microscopy image. Return ONLY a JSON object: {"cellAnalysis": "string", "cellType": "Neuron/Cancer/Blood", "quantitativeData": {"cellCount": 100, "density": 0.5, "averageAxonLength": 20, "ncRatio": 0.3, "nuclearPleomorphismScore": 1, "branchingIndex": 2}, "healthAssessment": {"nucleusState": "string", "cytoskeletonIntegrity": "string", "overallRisk": "Low"}, "overallConfidence": 95, "processingTime": 1.2}' },
+              { text: 'Analyze this microscopy image. Return ONLY a JSON object, no conversational text. JSON structure: {"cellAnalysis": "string", "cellType": "Neuron/Cancer/Blood", "quantitativeData": {"cellCount": 100, "density": 0.5, "averageAxonLength": 20, "ncRatio": 0.3, "nuclearPleomorphismScore": 1, "branchingIndex": 2}, "healthAssessment": {"nucleusState": "string", "cytoskeletonIntegrity": "string", "overallRisk": "Low"}, "overallConfidence": 95, "processingTime": 1.2}' },
               { inlineData: { mimeType: mimeType, data: base64Data } }
             ]
           }]
@@ -158,15 +161,26 @@ export default function App() {
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);
 
-      const responseText = data.candidates[0].content.parts[0].text;
-      const cleanJson = responseText.replace(/```json|```/g, "").trim();
+      // 2. Kỹ thuật bóc tách JSON "thượng thừa"
+      let responseText = data.candidates[0].content.parts[0].text;
+      
+      // Tìm vị trí của dấu { đầu tiên và dấu } cuối cùng để tránh rác text
+      const firstBracket = responseText.indexOf('{');
+      const lastBracket = responseText.lastIndexOf('}');
+      
+      if (firstBracket === -1 || lastBracket === -1) {
+        throw new Error("AI không trả về định dạng JSON hợp lệ.");
+      }
+      
+      const cleanJson = responseText.substring(firstBracket, lastBracket + 1);
       const finalResult = JSON.parse(cleanJson);
       
       setPredictionResult(finalResult);
-      // ... phần setHistory giữ nguyên như cũ
+      
+      // Update history... (giữ nguyên của mày)
     } catch (error: any) {
       console.error("AI Error:", error);
-      alert("Lỗi AI: " + error.message);
+      alert("Lỗi AI (Hải check lại URL/Key): " + error.message);
     } finally {
       setIsPredicting(false);
     }
@@ -206,7 +220,7 @@ Format Báo cáo BẮT BUỘC:
 *Constraints: BẮT BUỘC có câu: "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS." ở cuối.*`;
 
     // GỌI MODEL GEMINI-PRO BẢN V1 CHO CHẮC ĂN
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
