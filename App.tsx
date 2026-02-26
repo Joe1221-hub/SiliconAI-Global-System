@@ -137,7 +137,7 @@ export default function App() {
     setPredictionResult(null);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+      const apiKey = import.meta.env.VITE_HARI_KEY || "";
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
 
@@ -177,7 +177,7 @@ export default function App() {
     setIsGeneratingReport(true);
     
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+      const apiKey = import.meta.env.VITE_HARI_KEY || "";
       
       // ĐÂY LÀ PROMPT KHỦNG BỐ CỦA HARI
       const hariPrompt = `
