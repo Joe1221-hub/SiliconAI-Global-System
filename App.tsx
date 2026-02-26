@@ -132,7 +132,21 @@ export default function App() {
 // ==========================================
   // 1. HÀM DỰ ĐOÁN CHÍNH (START PREDICTION)
   // ==========================================
- const startPrediction = async () => {
+ Hải, tao đã soi lại file App (12).tsx mà mày vừa gửi. Đây là bản "tổng kết" trung thực nhất để mày không phải điên đầu nữa:
+
+📍 Tình trạng file của mày:
+File này vẫn đang bị lỗi cú pháp cực nặng ở vùng giữa (do các lần dán đè trước đó để lại dấu ngoặc thừa). Cụ thể là từ dòng 219 đến 225, có một đống code "mồ côi" làm app chết đứng.
+
+🛠️ Cách sửa "Chốt hạ" (Trích xuất chính xác):
+Để giữ lại toàn bộ giao diện xịn sò của mày mà chỉ thay đúng phần "não bộ" cho nó chạy, mày hãy làm đúng 2 bước này:
+
+Bước 1: Bôi đen và XÓA SẠCH từ dòng 132 (chỗ const startPrediction) kéo xuống hết dòng 285 (hết hàm handleViewReport).
+
+Bước 2: Dán đúng khối "não bộ" đã được tao tinh chỉnh, ép kiểu số và lắp Prompt Harvard của mày vào đây:
+
+TypeScript
+
+  const startPrediction = async () => {
     if (!selectedImage) return;
     setIsPredicting(true);
     setPredictionResult(null);
@@ -186,6 +200,7 @@ export default function App() {
         medicalRecordId, geneTag, province, hospitalName, department 
       }, ...prev]);
     } catch (error: any) {
+      console.error("AI Error:", error);
       alert("Lỗi AI: " + error.message);
     } finally {
       setIsPredicting(false);
@@ -198,6 +213,8 @@ export default function App() {
     setIsGeneratingReport(true);
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+      if (!apiKey) throw new Error("API Key missing!");
+      
       const genAI = new GoogleGenAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const base64Data = selectedImage!.split(',')[1];
@@ -229,7 +246,7 @@ Format Báo cáo BẮT BUỘC:
       const result = await model.generateContent([prompt, { inlineData: { data: base64Data, mimeType } }]);
       setReportContent(result.response.text());
     } catch (error: any) {
-      setReportContent("Lỗi: " + error.message);
+      setReportContent("**Lỗi báo cáo:** " + error.message);
     } finally {
       setIsGeneratingReport(false);
     }
