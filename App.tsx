@@ -5,7 +5,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Upload, Play, Activity, CheckCircle2, AlertCircle, Settings2, Image as ImageIcon, Layers, ChevronRight, X, Microscope, History, Lock, Database, FileText, Building2, ActivitySquare, GitCommit } from 'lucide-react';
-import { GoogleGenAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import Markdown from 'react-markdown';
 
 // Apple-style minimalist UI
@@ -144,7 +144,7 @@ export default function App() {
         throw new Error("Missing API Key");
       }
 
-      const genAI = new GoogleGenAI(apiKey);
+      const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
@@ -201,7 +201,7 @@ export default function App() {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
       if (!apiKey) throw new Error("API Key missing!");
       
-      const genAI = new GoogleGenAI(apiKey);
+      const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
