@@ -5,7 +5,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Upload, Play, Activity, CheckCircle2, AlertCircle, Settings2, Image as ImageIcon, Layers, ChevronRight, X, Microscope, History, Lock, Database, FileText, Building2, ActivitySquare, GitCommit } from 'lucide-react';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/generative-ai';
 import Markdown from 'react-markdown';
 
 // Apple-style minimalist UI
