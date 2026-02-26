@@ -180,7 +180,7 @@ const startPrediction = async () => {
       // Update history... (giữ nguyên của mày)
     } catch (error: any) {
       console.error("AI Error:", error);
-      alert("Lỗi AI (Hải check lại URL/Key): " + error.message);
+      alert("Lỗi AI (Hari check lại URL/Key): " + error.message);
     } finally {
       setIsPredicting(false);
     }
