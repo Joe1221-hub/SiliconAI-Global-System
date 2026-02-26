@@ -172,15 +172,17 @@ export default function App() {
     }
   };
  const handleViewReport = async () => {
-    setIsReportModalOpen(true);
-    if (reportContent || !predictionResult) return;
-    setIsGeneratingReport(true);
-    
-    try {
-      const apiKey = import.meta.env.VITE_HARI_KEY || "";
-      
-      // ĐÂY LÀ PROMPT KHỦNG BỐ CỦA HARI
-      const hariPrompt = `
+  setIsReportModalOpen(true);
+  if (reportContent || !predictionResult) return;
+  setIsGeneratingReport(true);
+  
+  try {
+    const apiKey = import.meta.env.VITE_HARI_KEY || ""; // Đúng biến mày đặt trên Vercel
+    const base64Data = selectedImage!.split(',')[1];
+    const mimeType = selectedImage!.split(';')[0].split(':')[1];
+
+    // DÁN PROMPT KHỦNG BỐ CỦA MÀY VÀO ĐÂY
+    const hariPrompt = `
 Role: Mày là một chuyên gia hàng đầu về Computer Vision trong Y sinh và Bioinformatics tại Harvard.
 Task: Dựa trên dữ liệu phân tích hình thái học sau đây từ model ${selectedModel}, hãy viết một báo cáo đánh giá chuyên sâu.
 
@@ -203,26 +205,26 @@ Format Báo cáo BẮT BUỘC:
 
 *Constraints: BẮT BUỘC có câu: "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS." ở cuối.*`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: hariPrompt }]
-          }]
-        })
-      });
+    // GỌI MODEL GEMINI-PRO BẢN V1 CHO CHẮC ĂN
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: hariPrompt }, { inlineData: { mimeType: mimeType, data: base64Data } }]
+        }]
+      })
+    });
 
-      const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
-      
-      setReportContent(data.candidates[0].content.parts[0].text);
-    } catch (error: any) {
-      setReportContent("**Lỗi tạo báo cáo từ Harvard AI:** " + error.message);
-    } finally {
-      setIsGeneratingReport(false);
-    }
-  };
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    setReportContent(data.candidates[0].content.parts[0].text);
+  } catch (error: any) {
+    setReportContent("**Lỗi tạo báo cáo từ Harvard AI:** " + error.message);
+  } finally {
+    setIsGeneratingReport(false);
+  }
+};
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden font-sans">
