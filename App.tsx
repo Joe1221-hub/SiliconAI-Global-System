@@ -135,28 +135,26 @@ const startPrediction = async () => {
     setPredictionResult(null);
 
     try {
-      // 1. Lấy Key và CHẶN đứng nếu thiếu
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
       if (!apiKey) {
-        throw new Error("Chưa nhận được API Key trên Vercel - Check tab Environment Variables!");
+        alert("Hari ơi, Vercel chưa nhận được Key! Hãy kiểm tra tab Environment Variables.");
+        throw new Error("Missing API Key");
       }
 
-      // 2. Khởi tạo AI sau khi đã có Key
       const genAI = new GoogleGenAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const base64Data = selectedImage.split(',')[1];
       const mimeType = selectedImage.split(';')[0].split(':')[1];
       
-      // Prompt này được tinh chỉnh để AI không thể trả về 0 bừa bãi
       const prompt = `Analyze this fluorescence microscopy image. Detect cells and morphology. 
       Return ONLY a JSON object with this exact structure:
       {
-        "cellAnalysis": "Detailed description of what you see",
+        "cellAnalysis": "Detailed description",
         "cellType": "Neuron or Cancer or Blood",
-        "quantitativeData": { "cellCount": number, "density": number, "averageAxonLength": number, "ncRatio": number },
+        "quantitativeData": { "cellCount": number, "density": number, "averageAxonLength": number, "ncRatio": number, "nuclearPleomorphismScore": number, "branchingIndex": number },
         "healthAssessment": { "nucleusState": "Healthy/Abnormal", "cytoskeletonIntegrity": "Intact/Fragmented", "overallRisk": "Low/Medium/High" },
-        "overallConfidence": number (between 0-100),
+        "overallConfidence": number,
         "processingTime": number
       }`;
 
@@ -167,14 +165,10 @@ const startPrediction = async () => {
 
       const responseText = genResult.response.text();
       const cleanJson = responseText.replace(/```json|```/g, "").trim();
-      
-      // Xử lý dữ liệu
       const finalResult = JSON.parse(cleanJson);
       
-      // Đổ số lên Dashboard
       setPredictionResult(finalResult);
 
-      // Lưu History ngay lập tức
       setHistory(prev => [{
         id: Date.now().toString(),
         timestamp: new Date().toLocaleString(),
@@ -187,13 +181,12 @@ const startPrediction = async () => {
 
     } catch (error: any) {
       console.error("Prediction Error:", error);
-      // Khi lỗi, chỉ để confidence là 0 để mày biết là AI chưa chạy được
       setPredictionResult({
-        cellAnalysis: "Lỗi hệ thống: " + error.message,
+        cellAnalysis: "Lỗi kết nối AI: " + error.message,
         cellType: "Error",
-        quantitativeData: { cellCount: 0, density: 0 },
+        quantitativeData: { cellCount: 0, density: 0, averageAxonLength: 0, ncRatio: 0, nuclearPleomorphismScore: 0, branchingIndex: 0 },
         healthAssessment: { nucleusState: "N/A", cytoskeletonIntegrity: "N/A", overallRisk: "High" },
-        overallConfidence: 0, 
+        overallConfidence: 0,
         processingTime: 0
       });
     } finally {
@@ -202,25 +195,20 @@ const startPrediction = async () => {
   };
 const handleViewReport = async () => {
     setIsReportModalOpen(true);
-    // 1. Chặn nếu chưa có kết quả dự đoán (để lấy dữ liệu nạp vào Prompt)
     if (reportContent || !predictionResult) return;
 
     setIsGeneratingReport(true);
     try {
-      // 2. Lấy API Key và KIỂM TRA TRƯỚC (Đây là nhát dao sống còn)
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-      if (!apiKey) {
-        throw new Error("An API Key must be set (Hari ơi, check lại Environment Variables trên Vercel nhé!)");
-      }
+      if (!apiKey) throw new Error("API Key chưa được gán trên Vercel!");
 
-      // 3. Khởi tạo AI sau khi đã có Key an toàn
       const genAI = new GoogleGenAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const base64Data = selectedImage!.split(',')[1];
       const mimeType = selectedImage!.split(';')[0].split(':')[1];
 
-      // GIỮ NGUYÊN PROMPT "KHỦNG" CỦA HẢI ĐÂY:
+      // PROMPT GỐC CỦA HẢI
       const prompt = `
 Role: Mày là một chuyên gia hàng đầu về Computer Vision trong Y sinh và Bioinformatics tại Harvard.
 Task: Dựa trên dữ liệu phân tích hình thái học sau đây từ model ${selectedModel}, hãy viết một báo cáo đánh giá chuyên sâu.
@@ -229,41 +217,29 @@ Loại tế bào: ${predictionResult.cellType}
 Dữ liệu định lượng:
 - Số lượng tế bào: ${predictionResult.quantitativeData.cellCount}
 - Mật độ (Cells/mm²): ${predictionResult.quantitativeData.density}
-${predictionResult.cellType === 'Neuron' ? `- Chiều gia sợi trục TB (µm): ${predictionResult.quantitativeData.averageAxonLength}
-- Chỉ số phân nhánh: ${predictionResult.quantitativeData.branchingIndex}/10` : ''}
-${predictionResult.cellType === 'Cancer' ? `- Điểm đa hình thái nhân (Pleomorphism): ${predictionResult.quantitativeData.nuclearPleomorphismScore}/10
-- Tỉ lệ Nhân/Tế bào chất (N/C Ratio): ${predictionResult.quantitativeData.ncRatio}` : ''}
+${predictionResult.cellType === 'Neuron' ? `- Chiều gia sợi trục TB (µm): ${predictionResult.quantitativeData.averageAxonLength} - Chỉ số phân nhánh: ${predictionResult.quantitativeData.branchingIndex}/10` : ''}
+${predictionResult.cellType === 'Cancer' ? `- Điểm đa hình thái nhân (Pleomorphism): ${predictionResult.quantitativeData.nuclearPleomorphismScore}/10 - Tỉ lệ Nhân/Tế bào chất (N/C Ratio): ${predictionResult.quantitativeData.ncRatio}` : ''}
 
 Đánh giá sức khỏe:
 - Trạng thái nhân: ${predictionResult.healthAssessment.nucleusState}
 - Khung xương tế bào: ${predictionResult.healthAssessment.cytoskeletonIntegrity}
 - Nguy cơ tổng thể: ${predictionResult.healthAssessment.overallRisk}
 
-Tone & Style: Ngôn ngữ chuyên nghiệp, chính xác, khoa học, không thừa thãi. Nếu là ung thư, hãy phân tích theo hướng bệnh học ung thư (oncology). Nếu là neuron, phân tích theo hướng thoái hóa thần kinh (neurodegeneration).
-
 Format Báo cáo BẮT BUỘC:
 ### Phần 1: Thông số định lượng (Quantitative Data)
-(Phân tích ý nghĩa của các con số mật độ, và các chỉ số đặc thù của loại tế bào)
-
 ### Phần 2: Đánh giá sức khỏe tế bào (Cellular Health Assessment)
-(Đánh giá trạng thái nhân và khung xương, liên hệ tới các nguy cơ bệnh lý tương ứng)
-
 ### Phần 3: Khuyến nghị chuyên sâu (Advanced Recommendations)
-(Đề xuất các thí nghiệm kiểm chứng như Patch-clamp, RNA-seq, IHC, v.v.)
 
-Constraints: BẮT BUỘC phải có câu cảnh báo này ở cuối báo cáo (in nghiêng hoặc in đậm): "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS."`;
+*Constraints: BẮT BUỘC có câu: "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS." ở cuối.*`;
 
-      // 4. Gọi AI với đúng trật tự tham số [Prompt, Image]
       const result = await model.generateContent([
         prompt,
         { inlineData: { data: base64Data, mimeType } }
       ]);
 
       const content = result.response.text();
-      
       if (content) {
         setReportContent(content);
-        // 5. Đồng bộ vào History để sau này xem lại không bị mất
         setHistory(prev =>
           prev.map(item =>
             item.image === selectedImage && item.model === selectedModel
@@ -273,8 +249,7 @@ Constraints: BẮT BUỘC phải có câu cảnh báo này ở cuối báo cáo 
         );
       }
     } catch (error: any) {
-      console.error("Report generation error:", error);
-      setReportContent(`**Đã xảy ra lỗi:** ${error.message}`);
+      setReportContent(`**Lỗi hệ thống:** ${error.message}`);
     } finally {
       setIsGeneratingReport(false);
     }
