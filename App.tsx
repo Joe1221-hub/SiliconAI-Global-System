@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-port React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Play, Activity, CheckCircle2, AlertCircle, Settings2, Image as ImageIcon, Layers, ChevronRight, X, Microscope, History, Lock, Database, FileText, Building2, ActivitySquare, GitCommit } from 'lucide-react';
 
 // Apple-style minimalist UI
