@@ -24,12 +24,6 @@ const PROVINCES = [
 ];
 
 const HOSPITALS_BY_PROVINCE: Record<string, string[]> = {
-  const HARI_PROMPT = `Bạn là một chuyên gia giải phẫu bệnh cấp cao. 
-Hãy phân tích hình ảnh tế bào học này và tập trung vào:
-1. ncRatio (Tỉ lệ nhân/nguyên sinh chất).
-2. Hình thái nhân (Pleomorphism).
-3. Mật độ phân bào (Mitotic Count).
-Đưa ra kết luận chuyên môn ngắn gọn, chính xác.`;
   'Hà Nội': ['Bệnh viện Bạch Mai', 'Bệnh viện Việt Đức', 'Bệnh viện K', 'Bệnh viện Nhi Trung ương', 'Bệnh viện Phụ sản Trung ương', 'Bệnh viện E', 'Bệnh viện Xanh Pôn', 'Bệnh viện Thanh Nhàn'],
   'TP. Hồ Chí Minh': ['Bệnh viện Chợ Rẫy', 'Bệnh viện Đại học Y Dược', 'Bệnh viện Nhân dân 115', 'Bệnh viện Nhi Đồng 1', 'Bệnh viện Từ Dũ', 'Bệnh viện Ung Bướu TP.HCM', 'Bệnh viện Bệnh Nhiệt đới'],
   'Đà Nẵng': ['Bệnh viện C Đà Nẵng', 'Bệnh viện Đa khoa Đà Nẵng', 'Bệnh viện Phụ sản - Nhi Đà Nẵng', 'Bệnh viện Ung bướu Đà Nẵng'],
@@ -65,6 +59,12 @@ Hãy phân tích hình ảnh tế bào học này và tập trung vào:
   'Thanh Hóa': ['Bệnh viện Đa khoa Tỉnh Thanh Hóa', 'Bệnh viện Nhi Thanh Hóa'],
   'Thừa Thiên Huế': ['Bệnh viện Trung ương Huế']
 };
+const HARI_PROMPT = `Bạn là một chuyên gia giải phẫu bệnh cấp cao. 
+Hãy phân tích hình ảnh tế bào học này và tập trung vào:
+1. ncRatio (Tỉ lệ nhân/nguyên sinh chất).
+2. Hình thái nhân (Pleomorphism).
+3. Mật độ phân bào (Mitotic Count).
+Đưa ra kết luận chuyên môn ngắn gọn, chính xác.`;
 const DEPARTMENTS_BY_HOSPITAL: Record<string, string[]> = {
   'Bệnh viện Bạch Mai': ['Viện Tim mạch', 'Viện Thần kinh', 'Trung tâm Chống độc', 'Khoa Khám bệnh', 'Trung tâm Y học hạt nhân', 'Trung tâm cấp cứu A9', 'Chấn thương chỉnh hình', 'Nhi', 'Sản', 'Tiêu hóa', 'Thận nhân tạo'],
   'Bệnh viện Việt Đức': ['Khoa Phẫu thuật Thần kinh', 'Khoa Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh'],
