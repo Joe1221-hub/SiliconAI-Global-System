@@ -24,6 +24,12 @@ const PROVINCES = [
 ];
 
 const HOSPITALS_BY_PROVINCE: Record<string, string[]> = {
+  const HARI_PROMPT = `Bạn là một chuyên gia giải phẫu bệnh cấp cao. 
+Hãy phân tích hình ảnh tế bào học này và tập trung vào:
+1. ncRatio (Tỉ lệ nhân/nguyên sinh chất).
+2. Hình thái nhân (Pleomorphism).
+3. Mật độ phân bào (Mitotic Count).
+Đưa ra kết luận chuyên môn ngắn gọn, chính xác.`;
   'Hà Nội': ['Bệnh viện Bạch Mai', 'Bệnh viện Việt Đức', 'Bệnh viện K', 'Bệnh viện Nhi Trung ương', 'Bệnh viện Phụ sản Trung ương', 'Bệnh viện E', 'Bệnh viện Xanh Pôn', 'Bệnh viện Thanh Nhàn'],
   'TP. Hồ Chí Minh': ['Bệnh viện Chợ Rẫy', 'Bệnh viện Đại học Y Dược', 'Bệnh viện Nhân dân 115', 'Bệnh viện Nhi Đồng 1', 'Bệnh viện Từ Dũ', 'Bệnh viện Ung Bướu TP.HCM', 'Bệnh viện Bệnh Nhiệt đới'],
   'Đà Nẵng': ['Bệnh viện C Đà Nẵng', 'Bệnh viện Đa khoa Đà Nẵng', 'Bệnh viện Phụ sản - Nhi Đà Nẵng', 'Bệnh viện Ung bướu Đà Nẵng'],
@@ -285,7 +291,7 @@ Format Báo cáo BẮT BUỘC:
       body: JSON.stringify({
   contents: [{
     parts: [
-      { text: hariPrompt },
+      { text: HARI_PROMPT },
       { inlineData: { mimeType, data: base64Data } }
     ]
   }],
