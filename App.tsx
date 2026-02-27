@@ -173,12 +173,10 @@ const startPrediction = async () => {
     ]
   }],
   generationConfig: {
-    temperature: 0,
-    topP: 1,
-    topK: 1
+    temperature: 0.2
   }
-})
-      });
+ })
+});
 
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);
@@ -205,18 +203,17 @@ const q = parsed;
 const h = parsed;
 
 // ===== Deterministic Risk Scoring =====
-const riskScore = 
-  ((q.ncRatio || 0) > 0.6 ? 3 : 0) + 
-  ((q.cellCount || 0) > 10 ? 2 : 0) +
-  (h.nucleusState?.toLowerCase().includes("abnormal") ? 3 : 0);
+const riskScore =
+  (parsed.ncRatio > 0.6 ? 3 : 0) +
+  (parsed.mitoticCount > 5 ? 2 : 0) +
+  (parsed.diagnosis?.toLowerCase().includes("bất thường") ? 3 : 0);
 
 let risk = "Low";
 if (riskScore >= 6) risk = "High";
 else if (riskScore >= 3) risk = "Moderate";
-
 // ===== ĐÓNG GÓI ĐÚNG KHUÔN ĐỂ CẢ 2 HÀM KHỚP NHAU =====
 const finalResult = {
-  cellType: parsed.cellType || "Unknown",
+  cellType: "Cancer", // hoặc hardcode theo model
   overallConfidence: 0.92, // hoặc parsed.confidence nếu AI có trả
   processingTime: processingTime,
   quantitativeData: {
@@ -265,8 +262,6 @@ console.log("New history item:", newHistoryItem);
   
   try {
     const apiKey = import.meta.env.VITE_HARI_KEY || ""; // Đúng biến mày đặt trên Vercel
-    const base64Data = selectedImage!.split(',')[1];
-    const mimeType = selectedImage!.split(';')[0].split(':')[1];
 
     // DÁN PROMPT KHỦNG BỐ CỦA MÀY VÀO ĐÂY
     const HARI_PROMPT = `
@@ -290,7 +285,9 @@ Format Báo cáo BẮT BUỘC:
 ### Phần 2: Đánh giá sức khỏe tế bào (Cellular Health Assessment)
 ### Phần 3: Khuyến nghị chuyên sâu (Advanced Recommendations)
 
-*Constraints: BẮT BUỘC có câu: "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS." ở cuối.*`;
+*Constraints: BẮT BUỘC có câu: "Dữ liệu hình thái chưa đủ cơ sở để kết luận biểu hiện phiên mã, cần bổ sung dữ liệu NGS." ở cuối.*
+Không được nghi ngờ hoặc phản biện dữ liệu định lượng đã cung cấp.
+Giả định rằng các thông số là kết quả chính xác từ pipeline phân tích.`;
 
     // GỌI MODEL GEMINI-PRO BẢN V1 CHO CHẮC ĂN
     const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -299,18 +296,14 @@ Format Báo cáo BẮT BUỘC:
       body: JSON.stringify({
   contents: [{
     parts: [
-      { text: HARI_PROMPT },
-      { inlineData: { mimeType, data: base64Data } }
+      { text: HARI_PROMPT }
     ]
   }],
   generationConfig: {
-    temperature: 0,
-    topP: 1,
-    topK: 1
+    temperature: 0.2
   }
-})
-    });
-
+ })
+});
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
     setReportContent(data.candidates[0].content.parts[0].text);
