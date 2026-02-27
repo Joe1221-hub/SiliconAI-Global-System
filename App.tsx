@@ -195,6 +195,20 @@ const startPrediction = async () => {
      const cleanJson = responseText.substring(firstBracket, lastBracket + 1);
 
 const parsed = JSON.parse(cleanJson);
+const safeNcRatio =
+  typeof parsed.ncRatio === "string"
+    ? parseFloat(parsed.ncRatio.replace(",", "."))
+    : parsed.ncRatio || 0;
+
+const safeMitoticCount =
+  typeof parsed.mitoticCount === "string"
+    ? parseInt(parsed.mitoticCount)
+    : parsed.mitoticCount || 0;
+
+const safePleomorphism =
+  typeof parsed.nuclearPleomorphismScore === "string"
+    ? parseInt(parsed.nuclearPleomorphismScore)
+    : parsed.nuclearPleomorphismScore || 0;
 const endTime = performance.now();
 const processingTime = ((endTime - startTime) / 1000).toFixed(2);
 
@@ -204,22 +218,22 @@ const h = parsed;
 
 // ===== Deterministic Risk Scoring =====
 const riskScore =
-  (parsed.ncRatio > 0.6 ? 3 : 0) +
-  (parsed.mitoticCount > 5 ? 2 : 0) +
+  (safeNcRatio > 0.6 ? 3 : 0) +
+  (safeMitoticCount > 5 ? 2 : 0) +
   (parsed.diagnosis?.toLowerCase().includes("bất thường") ? 3 : 0);
-
 let risk = "Low";
 if (riskScore >= 6) risk = "High";
 else if (riskScore >= 3) risk = "Moderate";
 // ===== ĐÓNG GÓI ĐÚNG KHUÔN ĐỂ CẢ 2 HÀM KHỚP NHAU =====
 const finalResult = {
   cellType: "Cancer", // hoặc hardcode theo model
-  overallConfidence: 0.92, // hoặc parsed.confidence nếu AI có trả
+  overallConfidence: data.candidates?.[0]?.confidence || 0.75, // hoặc parsed.confidence nếu AI có trả
   processingTime: processingTime,
   quantitativeData: {
     cellCount: parsed.mitoticCount || 0,
     density: 0,
-    ncRatio: parseFloat(parsed.ncRatio) || 0,
+    ncRatio: safeNcRatio,
+nuclearPleomorphismScore: safePleomorphism,
     averageAxonLength: 0,
     branchingIndex: 0,
     nuclearPleomorphismScore: parsed.nuclearPleomorphismScore || 0
@@ -390,7 +404,7 @@ Giả định rằng các thông số là kết quả chính xác từ pipeline 
             <Activity size={24} className="text-[#10B981]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#0A2540] tracking-tight">GENE-VISION AI</h1>
+            <h1 className="text-xl font-bold text-[#0A2540] tracking-tight">CELL-VISION AI</h1>
             <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">Silicon Research Prototype</p>
           </div>
         </div>
