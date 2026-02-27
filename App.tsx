@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+port React, { useState, useRef, useEffect } from 'react';
 import { Upload, Play, Activity, CheckCircle2, AlertCircle, Settings2, Image as ImageIcon, Layers, ChevronRight, X, Microscope, History, Lock, Database, FileText, Building2, ActivitySquare, GitCommit } from 'lucide-react';
 import Markdown from 'react-markdown';
 
@@ -158,7 +158,7 @@ const startPrediction = async () => {
         body: JSON.stringify({
   contents: [{
     parts: [
-      { text: hariPrompt },
+      { text: HARI_PROMPT },
       { inlineData: { mimeType, data: base64Data } }
     ]
   }],
@@ -256,7 +256,7 @@ console.log("New history item:", newHistoryItem);
     const mimeType = selectedImage!.split(';')[0].split(':')[1];
 
     // DÁN PROMPT KHỦNG BỐ CỦA MÀY VÀO ĐÂY
-    const hariPrompt = `
+    const HARI_PROMPT = `
 Role: Mày là một chuyên gia hàng đầu về Computer Vision trong Y sinh và Bioinformatics tại Harvard.
 Task: Dựa trên dữ liệu phân tích hình thái học sau đây từ model ${selectedModel}, hãy viết một báo cáo đánh giá chuyên sâu.
 
