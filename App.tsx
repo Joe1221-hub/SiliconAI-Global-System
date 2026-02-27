@@ -236,7 +236,6 @@ const finalResult = {
 nuclearPleomorphismScore: safePleomorphism,
     averageAxonLength: 0,
     branchingIndex: 0,
-    nuclearPleomorphismScore: parsed.nuclearPleomorphismScore || 0
   },
   healthAssessment: {
     nucleusState: parsed.diagnosis || "N/A",
