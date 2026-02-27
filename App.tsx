@@ -97,6 +97,14 @@ export default function App() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+   useEffect(() => {
+    const saved = localStorage.getItem("predictionHistory");
+    if (saved) setHistory(JSON.parse(saved));
+  }, []);
+
+   useEffect(() => {
+    localStorage.setItem("predictionHistory", JSON.stringify(history));
+  }, [history]);
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (loginUsername === 'siliconmedi3443' && loginPassword === 'yteviet24h@') {
@@ -148,14 +156,18 @@ const startPrediction = async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            role: "user", // Thêm Role để Google nhận diện đúng luồng
-            parts: [
-              { text: 'Analyze this microscopy image. Return ONLY a JSON object, no conversational text. JSON structure: {"cellAnalysis": "string", "cellType": "Neuron/Cancer/Blood", "quantitativeData": {"cellCount": 100, "density": 0.5, "averageAxonLength": 20, "ncRatio": 0.3, "nuclearPleomorphismScore": 1, "branchingIndex": 2}, "healthAssessment": {"nucleusState": "string", "cytoskeletonIntegrity": "string", "overallRisk": "Low"}, "overallConfidence": 95, "processingTime": 1.2}' },
-              { inlineData: { mimeType: mimeType, data: base64Data } }
-            ]
-          }]
-        })
+  contents: [{
+    parts: [
+      { text: hariPrompt },
+      { inlineData: { mimeType, data: base64Data } }
+    ]
+  }],
+  generationConfig: {
+    temperature: 0,
+    topP: 1,
+    topK: 1
+  }
+})
       });
 
       const data = await response.json();
@@ -172,11 +184,59 @@ const startPrediction = async () => {
         throw new Error("AI không trả về định dạng JSON hợp lệ.");
       }
       
-      const cleanJson = responseText.substring(firstBracket, lastBracket + 1);
-      const finalResult = JSON.parse(cleanJson);
+     const cleanJson = responseText.substring(firstBracket, lastBracket + 1);
+
+const parsed = JSON.parse(cleanJson);
+
+// Đặt biến ngắn gọn để dùng cho cả tính toán và đóng gói
+const q = parsed.quantitativeData || {};
+const h = parsed.healthAssessment || {};
+
+// ===== Deterministic Risk Scoring =====
+const riskScore = 
+  ((q.ncRatio || 0) > 0.6 ? 3 : 0) + 
+  ((q.cellCount || 0) > 10 ? 2 : 0) +
+  (h.nucleusState?.toLowerCase().includes("abnormal") ? 3 : 0);
+
+let risk = "Low";
+if (riskScore >= 6) risk = "High";
+else if (riskScore >= 3) risk = "Moderate";
+
+// ===== ĐÓNG GÓI ĐÚNG KHUÔN ĐỂ CẢ 2 HÀM KHỚP NHAU =====
+const finalResult = {
+  cellType: parsed.cellType || "Unknown",
+  quantitativeData: {
+    cellCount: q.cellCount || 0,
+    density: q.density || 0,
+    ncRatio: q.ncRatio || 0,
+    averageAxonLength: q.averageAxonLength || 0,
+    branchingIndex: q.branchingIndex || 0,
+    // Thêm dòng này để handleViewReport không bị undefined
+    nuclearPleomorphismScore: q.nuclearPleomorphismScore || 0 
+  },
+  healthAssessment: {
+    nucleusState: h.nucleusState || "N/A",
+    cytoskeletonIntegrity: h.cytoskeletonIntegrity || "N/A",
+    overallRisk: risk 
+  }
+};
       
       setPredictionResult(finalResult);
-      
+      const newHistoryItem = {
+  id: Date.now(),
+  image: selectedImage,
+  model: selectedModel,
+  result: finalResult,
+  reportContent: null,
+  timestamp: new Date().toLocaleString(),
+  province,
+  hospitalName,
+  department,
+  medicalRecordId,
+  geneTag
+};
+console.log("New history item:", newHistoryItem);      
+      setHistory(prev => [newHistoryItem, ...prev]);
       // Update history... (giữ nguyên của mày)
     } catch (error: any) {
       console.error("AI Error:", error);
@@ -224,10 +284,18 @@ Format Báo cáo BẮT BUỘC:
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: hariPrompt }, { inlineData: { mimeType: mimeType, data: base64Data } }]
-        }]
-      })
+  contents: [{
+    parts: [
+      { text: hariPrompt },
+      { inlineData: { mimeType, data: base64Data } }
+    ]
+  }],
+  generationConfig: {
+    temperature: 0,
+    topP: 1,
+    topK: 1
+  }
+})
     });
 
     const data = await response.json();
