@@ -927,13 +927,14 @@ Format Báo cáo BẮT BUỘC:
                   <div className="w-16 h-16 border-4 border-[#000080]/20 border-t-[#000080] rounded-full animate-spin" />
                   <p className="text-[#0A2540] font-medium animate-pulse text-lg">Đang phân tích dữ liệu biểu hiện gene...</p>
                 </div>
-             ) : (
+              ) : (
                 <div className="prose prose-slate max-w-none">
                   <pre className="whitespace-pre-wrap font-sans text-[#0A2540] text-base leading-relaxed bg-white p-4 rounded-lg shadow-sm border border-slate-100">
                     {reportContent || 'Không có dữ liệu báo cáo.'}
                   </pre>
                 </div>
               )}
+            </div>
           </div>
         </div>
       )}
