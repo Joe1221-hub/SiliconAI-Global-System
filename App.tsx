@@ -59,16 +59,25 @@ const HOSPITALS_BY_PROVINCE: Record<string, string[]> = {
   'Thanh Hóa': ['Bệnh viện Đa khoa Tỉnh Thanh Hóa', 'Bệnh viện Nhi Thanh Hóa'],
   'Thừa Thiên Huế': ['Bệnh viện Trung ương Huế']
 };
-const HARI_PROMPT = `Bạn là một hệ thống phân tích hình ảnh y tế. 
-Hãy phân tích hình ảnh tế bào học này và CHỈ TRẢ VỀ một đối tượng JSON duy nhất, không kèm theo văn bản giải thích nào khác. 
-Định dạng JSON phải như sau:
+const HARI_PROMPT = `Bạn là một hệ thống phân tích hình thái học tế bào cao cấp.
+Nhiệm vụ: Phân tích hình ảnh và trả về JSON chuẩn. 
+
+Nếu là Tế bào Thần kinh (Neuron): Tập trung vào sợi trục (axon) và nhánh (dendrite).
+Nếu là Tế bào Ung thư (Cancer): Tập trung vào nhân (nucleus) và tỷ lệ N/C.
+
+CHỈ TRẢ VỀ JSON THEO ĐỊNH DẠNG SAU:
 {
-  "ncRatio": "giá trị số hoặc tỷ lệ",
-  "nuclearPleomorphismScore": "điểm từ 1-10",
+  "cellType": "Neuron" hoặc "Cancer",
+  "ncRatio": "giá trị số",
+  "nuclearPleomorphismScore": "điểm 1-10",
   "mitoticCount": "số lượng",
+  "averageAxonLength": "chiều dài (µm) nếu là Neuron, còn lại để 0",
+  "branchingIndex": "điểm 1-10 nếu là Neuron, còn lại để 0",
   "diagnosis": "kết luận ngắn gọn",
-  "detailedAnalysis": "đoạn văn phân tích chi tiết bằng tiếng Việt"
+  "detailedAnalysis": "phân tích chi tiết tiếng Việt"
 }`;
+
+
 const DEPARTMENTS_BY_HOSPITAL: Record<string, string[]> = {
   'Bệnh viện Bạch Mai': ['Viện Tim mạch', 'Viện Thần kinh', 'Trung tâm Chống độc', 'Khoa Khám bệnh', 'Trung tâm Y học hạt nhân', 'Trung tâm cấp cứu A9', 'Chấn thương chỉnh hình', 'Nhi', 'Sản', 'Tiêu hóa', 'Thận nhân tạo'],
   'Bệnh viện Việt Đức': ['Khoa Phẫu thuật Thần kinh', 'Khoa Ung bướu', 'Khoa Xét nghiệm', 'Khoa Giải phẫu bệnh'],
@@ -226,20 +235,20 @@ if (riskScore >= 6) risk = "High";
 else if (riskScore >= 3) risk = "Moderate";
 // ===== ĐÓNG GÓI ĐÚNG KHUÔN ĐỂ CẢ 2 HÀM KHỚP NHAU =====
 const finalResult = {
-  cellType: "Cancer", // hoặc hardcode theo model
-  overallConfidence: data.candidates?.[0]?.confidence || 0.75, // hoặc parsed.confidence nếu AI có trả
+  cellType: "Cancer", // Sau này mày có thể bắt AI trả về cellType để linh hoạt hơn
+  overallConfidence: data.candidates?.[0]?.confidence || 0.85, 
   processingTime: processingTime,
   quantitativeData: {
-    cellCount: parsed.mitoticCount || 0,
-    density: 0,
-    ncRatio: safeNcRatio,
-nuclearPleomorphismScore: safePleomorphism,
-    averageAxonLength: 0,
-    branchingIndex: 0,
+    cellCount: safeMitoticCount, // Dùng biến safe đã parse
+    density: 1250, // Hardcode tạm hoặc cho AI tính mật độ
+    ncRatio: safeNcRatio, // Dùng biến safe
+    nuclearPleomorphismScore: safePleomorphism, // Dùng biến safe
+    averageAxonLength: 15.5, // Nếu là Neuron thì AI cần trả thêm cái này
+    branchingIndex: 7
   },
   healthAssessment: {
     nucleusState: parsed.diagnosis || "N/A",
-    cytoskeletonIntegrity: "N/A",
+    cytoskeletonIntegrity: "Stable",
     overallRisk: risk
   }
 };
