@@ -5,7 +5,6 @@
 
 port React, { useState, useRef, useEffect } from 'react';
 import { Upload, Play, Activity, CheckCircle2, AlertCircle, Settings2, Image as ImageIcon, Layers, ChevronRight, X, Microscope, History, Lock, Database, FileText, Building2, ActivitySquare, GitCommit } from 'lucide-react';
-import Markdown from 'react-markdown';
 
 // Apple-style minimalist UI
 // Deep Blue: #0A2540
@@ -928,12 +927,13 @@ Format Báo cáo BẮT BUỘC:
                   <div className="w-16 h-16 border-4 border-[#000080]/20 border-t-[#000080] rounded-full animate-spin" />
                   <p className="text-[#0A2540] font-medium animate-pulse text-lg">Đang phân tích dữ liệu biểu hiện gene...</p>
                 </div>
-              ) : (
-                <div className="prose prose-slate max-w-none prose-headings:text-[#0A2540] prose-a:text-[#10B981] prose-strong:text-[#000080]">
-                  <Markdown>{reportContent || 'Không có dữ liệu báo cáo.'}</Markdown>
+             ) : (
+                <div className="prose prose-slate max-w-none">
+                  <pre className="whitespace-pre-wrap font-sans text-[#0A2540] text-base leading-relaxed bg-white p-4 rounded-lg shadow-sm border border-slate-100">
+                    {reportContent || 'Không có dữ liệu báo cáo.'}
+                  </pre>
                 </div>
               )}
-            </div>
           </div>
         </div>
       )}
