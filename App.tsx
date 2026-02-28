@@ -70,7 +70,9 @@ CHỈ TRẢ VỀ JSON THEO ĐỊNH DẠNG SAU:
   "cellType": "Neuron" hoặc "Cancer",
   "ncRatio": "giá trị số",
   "nuclearPleomorphismScore": "điểm 1-10",
-  "mitoticCount": "số lượng",
+  "cellCount": "tổng số tế bào",
+  "mitoticCount": "số tế bào đang phân bào",
+  "density": "cells/mm2"
   "averageAxonLength": "chiều dài (µm) nếu là Neuron, còn lại để 0",
   "branchingIndex": "điểm 1-10 nếu là Neuron, còn lại để 0",
   "diagnosis": "kết luận ngắn gọn",
@@ -204,6 +206,14 @@ const startPrediction = async () => {
      const cleanJson = responseText.substring(firstBracket, lastBracket + 1);
 
 const parsed = JSON.parse(cleanJson);
+const safeCellCount =
+  typeof parsed.cellCount === "string"
+    ? parseInt(parsed.cellCount)
+    : parsed.cellCount || 0;
+const safeDensity =
+  typeof parsed.density === "string"
+    ? parseFloat(parsed.density)
+    : parsed.density || 0;
 const safeNcRatio =
   typeof parsed.ncRatio === "string"
     ? parseFloat(parsed.ncRatio.replace(",", "."))
@@ -215,6 +225,15 @@ const safeMitoticCount =
     : parsed.mitoticCount || 0;
 
 const safePleomorphism =
+  const safeAxonLength =
+  typeof parsed.averageAxonLength === "string"
+    ? parseFloat(parsed.averageAxonLength)
+    : parsed.averageAxonLength || 0;
+
+const safeBranchingIndex =
+  typeof parsed.branchingIndex === "string"
+    ? parseInt(parsed.branchingIndex)
+    : parsed.branchingIndex || 0;
   typeof parsed.nuclearPleomorphismScore === "string"
     ? parseInt(parsed.nuclearPleomorphismScore)
     : parsed.nuclearPleomorphismScore || 0;
@@ -225,34 +244,41 @@ const processingTime = ((endTime - startTime) / 1000).toFixed(2);
 const q = parsed;
 const h = parsed;
 
-// ===== Deterministic Risk Scoring =====
-const riskScore =
-  (safeNcRatio > 0.6 ? 3 : 0) +
-  (safeMitoticCount > 5 ? 2 : 0) +
-  (parsed.diagnosis?.toLowerCase().includes("bất thường") ? 3 : 0);
-let risk = "Low";
-if (riskScore >= 6) risk = "High";
-else if (riskScore >= 3) risk = "Moderate";
 // ===== ĐÓNG GÓI ĐÚNG KHUÔN ĐỂ CẢ 2 HÀM KHỚP NHAU =====
-const finalResult = {
-  cellType: "Cancer", // Sau này mày có thể bắt AI trả về cellType để linh hoạt hơn
+  let risk = "Low";
+
+if (parsed.cellType === "Cancer") {
+  const riskScore =
+    (safeNcRatio > 0.6 ? 3 : 0) +
+    (safeMitoticCount > 5 ? 2 : 0) +
+    (parsed.diagnosis?.toLowerCase().includes("bất thường") ? 3 : 0);
+
+  if (riskScore >= 6) risk = "High";
+  else if (riskScore >= 3) risk = "Moderate";
+}
+
+if (parsed.cellType === "Neuron") {
+  if (safeBranchingIndex < 3) risk = "Moderate";
+  if (safeBranchingIndex < 2) risk = "High";
+}
+  const finalResult = {
+  cellType: parsed.cellType || "Unknown",
   overallConfidence: data.candidates?.[0]?.confidence || 0.85, 
   processingTime: processingTime,
   quantitativeData: {
-    cellCount: safeMitoticCount, // Dùng biến safe đã parse
-    density: 1250, // Hardcode tạm hoặc cho AI tính mật độ
-    ncRatio: safeNcRatio, // Dùng biến safe
-    nuclearPleomorphismScore: safePleomorphism, // Dùng biến safe
-    averageAxonLength: 15.5, // Nếu là Neuron thì AI cần trả thêm cái này
-    branchingIndex: 7
-  },
+  cellCount: safeCellCount,
+  density: safeDensity,
+  ncRatio: safeNcRatio,
+  nuclearPleomorphismScore: safePleomorphism,
+  averageAxonLength: safeAxonLength,
+  branchingIndex: safeBranchingIndex
+},
   healthAssessment: {
     nucleusState: parsed.diagnosis || "N/A",
     cytoskeletonIntegrity: "Stable",
     overallRisk: risk
   }
 };
-      
       setPredictionResult(finalResult);
       const newHistoryItem = {
   id: Date.now(),
