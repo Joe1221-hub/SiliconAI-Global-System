@@ -217,9 +217,6 @@ const safeBranching = parseInt(q.branchingIndex) || 0;
 const endTime = performance.now();
 const processingTime = ((endTime - startTime) / 1000).toFixed(2);
 
-const q = parsed;
-const h = parsed;
-
   let risk = "Low";
 if (q.cellType === "Cancer") {
   const riskScore = (safeNcRatio > 0.6 ? 3 : 0) + (safeMitotic > 5 ? 2 : 0) + (safePleomorphism > 7 ? 2 : 0);
