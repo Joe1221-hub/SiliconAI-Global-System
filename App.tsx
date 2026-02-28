@@ -223,9 +223,15 @@ const safeMitoticCount =
   typeof parsed.mitoticCount === "string"
     ? parseInt(parsed.mitoticCount)
     : parsed.mitoticCount || 0;
-
 const safePleomorphism =
-  const safeAxonLength =
+  typeof parsed.nuclearPleomorphismScore === "string"
+    ? parseInt(parsed.nuclearPleomorphismScore)
+    : parsed.nuclearPleomorphismScore || 0;
+
+const safeAxonLength =
+  typeof parsed.averageAxonLength === "string"
+    ? parseFloat(parsed.averageAxonLength)
+    : parsed.averageAxonLength || 0;
   typeof parsed.averageAxonLength === "string"
     ? parseFloat(parsed.averageAxonLength)
     : parsed.averageAxonLength || 0;
