@@ -149,16 +149,14 @@ export default function App() {
       const reader = new FileReader();
       reader.onload = (event) => {
         setSelectedImage(event.target?.result as string);
-        setPredictionResult(null); // Reset results on new upload
+        setPredictionResult(null); 
         setReportContent(null);
       };
       reader.readAsDataURL(file);
     }
   };
 
-// ==========================================
-  // 1. HÀM DỰ ĐOÁN CHÍNH (START PREDICTION)
-  // ==========================================
+
 const startPrediction = async () => {
     if (!selectedImage) return;
     setIsPredicting(true);
@@ -166,7 +164,7 @@ const startPrediction = async () => {
     setPredictionResult(null);
 
     try {
-      // 1. Kiểm tra Key (Đảm bảo trên Vercel mày đã đặt đúng tên này)
+     
       const apiKey = import.meta.env.VITE_HARI_KEY || "";
       if (!apiKey) throw new Error("API Key không tồn tại. Kiểm tra Vercel Environment Variables.");
 
@@ -206,81 +204,45 @@ const startPrediction = async () => {
      const cleanJson = responseText.substring(firstBracket, lastBracket + 1);
 
 const parsed = JSON.parse(cleanJson);
-const safeCellCount =
-  typeof parsed.cellCount === "string"
-    ? parseInt(parsed.cellCount)
-    : parsed.cellCount || 0;
-const safeDensity =
-  typeof parsed.density === "string"
-    ? parseFloat(parsed.density)
-    : parsed.density || 0;
-const safeNcRatio =
-  typeof parsed.ncRatio === "string"
-    ? parseFloat(parsed.ncRatio.replace(",", "."))
-    : parsed.ncRatio || 0;
 
-const safeMitoticCount =
-  typeof parsed.mitoticCount === "string"
-    ? parseInt(parsed.mitoticCount)
-    : parsed.mitoticCount || 0;
-const safePleomorphism =
-  typeof parsed.nuclearPleomorphismScore === "string"
-    ? parseInt(parsed.nuclearPleomorphismScore)
-    : parsed.nuclearPleomorphismScore || 0;
+const q = parsed; 
+const safeCellCount = parseInt(q.cellCount) || 0;
+const safeDensity = parseFloat(q.density) || 0;
+const safeNcRatio = parseFloat(String(q.ncRatio).replace(',', '.')) || 0;
+const safePleomorphism = parseInt(q.nuclearPleomorphismScore) || 0;
+const safeMitotic = parseInt(q.mitoticCount) || 0;
+const safeAxonLength = parseFloat(q.averageAxonLength) || 0;
+const safeBranching = parseInt(q.branchingIndex) || 0;
 
-const safeAxonLength =
-  typeof parsed.averageAxonLength === "string"
-    ? parseFloat(parsed.averageAxonLength)
-    : parsed.averageAxonLength || 0;
-  typeof parsed.averageAxonLength === "string"
-    ? parseFloat(parsed.averageAxonLength)
-    : parsed.averageAxonLength || 0;
-
-const safeBranchingIndex =
-  typeof parsed.branchingIndex === "string"
-    ? parseInt(parsed.branchingIndex)
-    : parsed.branchingIndex || 0;
-  typeof parsed.nuclearPleomorphismScore === "string"
-    ? parseInt(parsed.nuclearPleomorphismScore)
-    : parsed.nuclearPleomorphismScore || 0;
 const endTime = performance.now();
 const processingTime = ((endTime - startTime) / 1000).toFixed(2);
 
-// Đặt biến ngắn gọn để dùng cho cả tính toán và đóng gói
 const q = parsed;
 const h = parsed;
 
-// ===== ĐÓNG GÓI ĐÚNG KHUÔN ĐỂ CẢ 2 HÀM KHỚP NHAU =====
   let risk = "Low";
-
-if (parsed.cellType === "Cancer") {
-  const riskScore =
-    (safeNcRatio > 0.6 ? 3 : 0) +
-    (safeMitoticCount > 5 ? 2 : 0) +
-    (parsed.diagnosis?.toLowerCase().includes("bất thường") ? 3 : 0);
-
+if (q.cellType === "Cancer") {
+  const riskScore = (safeNcRatio > 0.6 ? 3 : 0) + (safeMitotic > 5 ? 2 : 0) + (safePleomorphism > 7 ? 2 : 0);
   if (riskScore >= 6) risk = "High";
   else if (riskScore >= 3) risk = "Moderate";
-}
-
-if (parsed.cellType === "Neuron") {
-  if (safeBranchingIndex < 3) risk = "Moderate";
-  if (safeBranchingIndex < 2) risk = "High";
+} else if (q.cellType === "Neuron") {
+  if (safeBranching < 3) risk = "Moderate";
+  if (safeBranching < 2) risk = "High";
 }
   const finalResult = {
-  cellType: parsed.cellType || "Unknown",
+  cellType: q.cellType || "Unknown",
   overallConfidence: data.candidates?.[0]?.confidence || 0.85, 
   processingTime: processingTime,
   quantitativeData: {
-  cellCount: safeCellCount,
-  density: safeDensity,
-  ncRatio: safeNcRatio,
-  nuclearPleomorphismScore: safePleomorphism,
-  averageAxonLength: safeAxonLength,
-  branchingIndex: safeBranchingIndex
-},
+    cellCount: safeCellCount,
+    density: safeDensity,
+    ncRatio: safeNcRatio,
+    nuclearPleomorphismScore: safePleomorphism,
+    averageAxonLength: safeAxonLength,
+    branchingIndex: safeBranching
+  },
   healthAssessment: {
-    nucleusState: parsed.diagnosis || "N/A",
+    nucleusState: q.diagnosis || "N/A",
     cytoskeletonIntegrity: "Stable",
     overallRisk: risk
   }
@@ -301,7 +263,7 @@ if (parsed.cellType === "Neuron") {
 };
 console.log("New history item:", newHistoryItem);      
       setHistory(prev => [newHistoryItem, ...prev]);
-      // Update history... (giữ nguyên của mày)
+
     } catch (error: any) {
       console.error("AI Error:", error);
       alert("Lỗi AI (Hari check lại URL/Key): " + error.message);
@@ -315,9 +277,9 @@ console.log("New history item:", newHistoryItem);
   setIsGeneratingReport(true);
   
   try {
-    const apiKey = import.meta.env.VITE_HARI_KEY || ""; // Đúng biến mày đặt trên Vercel
+    const apiKey = import.meta.env.VITE_HARI_KEY || "";
 
-    // DÁN PROMPT KHỦNG BỐ CỦA MÀY VÀO ĐÂY
+ 
     const HARI_PROMPT = `
 Role: Mày là một chuyên gia hàng đầu về Computer Vision trong Y sinh và Bioinformatics tại Harvard.
 Task: Dựa trên dữ liệu phân tích hình thái học sau đây từ model ${selectedModel}, hãy viết một báo cáo đánh giá chuyên sâu.
@@ -343,7 +305,6 @@ Format Báo cáo BẮT BUỘC:
 Không được nghi ngờ hoặc phản biện dữ liệu định lượng đã cung cấp.
 Giả định rằng các thông số là kết quả chính xác từ pipeline phân tích.`;
 
-    // GỌI MODEL GEMINI-PRO BẢN V1 CHO CHẮC ĂN
     const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
