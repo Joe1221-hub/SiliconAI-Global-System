@@ -353,6 +353,16 @@ Giả định rằng các thông số là kết quả chính xác từ pipeline 
               <p className="text-sm text-red-600 font-medium">{loginError}</p>
             </div>
           )}
+          {/* Reviewer Access Info - Xòe ra cho giám khảo thấy */}
+<div className="mb-6 p-4 bg-[#0A2540]/5 border border-[#0A2540]/10 rounded-2xl">
+  <p className="text-[11px] font-bold text-[#0A2540] uppercase tracking-widest mb-2 flex items-center gap-2">
+    <Lock size={12} /> Reviewer Access
+  </p>
+  <div className="flex justify-between text-xs text-slate-600 bg-white/50 p-2 rounded-lg border border-white">
+    <span>User: <span className="font-mono font-bold text-[#007bff]">siliconmedi3443</span></span>
+    <span>Pass: <span className="font-mono font-bold text-[#007bff]">yteviet24h@</span></span>
+  </div>
+</div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
